@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Consulting Platform — Architecture</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Syne:wght@700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:            #060a12;
+      --surface:       #0c1220;
+      --surface-2:     #101828;
+      --border:        #1a2840;
+      --border-mid:    #243554;
+      --border-bright: #2d4878;
+      --text:          #dde6f5;
+      --text-muted:    #5a7099;
+      --text-dim:      #2a3f60;
+
+      --amber:  #f59e0b;
+      --sky:    #38bdf8;
+      --emerald:#34d399;
+      --violet: #a78bfa;
+      --rose:   #fb7185;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── dot grid background ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: radial-gradient(circle, #1a2840 1px, transparent 1px);
+      background-size: 28px 28px;
+      pointer-events: none;
+      z-index: 0;
+    }
+    /* top glow */
+    body::after {
+      content: '';
+      position: fixed; top: -200px; left: 50%; transform: translateX(-50%);
+      width: 800px; height: 400px;
+      background: radial-gradient(ellipse, rgba(56,189,248,0.06) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .wrap {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 64px 40px 80px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ══════════════════════════════════════
+       HEADER
+    ══════════════════════════════════════ */
+    .hdr {
+      text-align: center;
+      margin-bottom: 64px;
+      animation: fadeUp .6s ease both;
+    }
+    .hdr-eye {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 18px;
+    }
+    .hdr h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(26px, 3.6vw, 46px);
+      font-weight: 800;
+      letter-spacing: -.03em;
+      line-height: 1.08;
+      margin-bottom: 14px;
+    }
+    .hdr h1 em { color: var(--sky); font-style: normal; }
+    .hdr-sub {
+      font-size: 14px;
+      font-weight: 300;
+      color: var(--text-muted);
+      margin-bottom: 28px;
+      letter-spacing: .01em;
+    }
+    .badges {
+      display: flex;
+      gap: 7px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      padding: 4px 10px;
+      border-radius: 4px;
+      border: 1px solid var(--border-mid);
+      color: var(--text-muted);
+      background: var(--surface);
+      letter-spacing: .04em;
+    }
+
+    /* ══════════════════════════════════════
+       LAYER CARD
+    ══════════════════════════════════════ */
+    .layer {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--surface);
+      overflow: hidden;
+      position: relative;
+    }
+    /* left accent bar */
+    .layer::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+      background: var(--lc);
+      opacity: .8;
+    }
+
+    .layer-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 13px 20px 13px 24px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface-2);
+    }
+    .layer-dot {
+      width: 9px; height: 9px;
+      border-radius: 50%;
+      background: var(--lc);
+      box-shadow: 0 0 8px var(--lc);
+      flex-shrink: 0;
+    }
+    .layer-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10.5px;
+      font-weight: 600;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--lc);
+    }
+    .layer-tech {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--text-dim);
+      margin-left: auto;
+      letter-spacing: .05em;
+    }
+
+    .layer-body {
+      padding: 18px 20px 20px 24px;
+    }
+
+    /* ══════════════════════════════════════
+       NODES
+    ══════════════════════════════════════ */
+    .nodes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+    }
+
+    .node {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 11px 14px;
+      background: var(--bg);
+      cursor: default;
+      transition: border-color .18s, transform .18s, box-shadow .18s;
+      position: relative;
+      overflow: hidden;
+      min-width: 130px;
+    }
+    .node::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% -20%, color-mix(in srgb, var(--lc) 12%, transparent), transparent 65%);
+      opacity: 0;
+      transition: opacity .22s;
+    }
+    .node:hover {
+      border-color: var(--lc);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0,0,0,.45), 0 0 0 1px var(--lc);
+    }
+    .node:hover::after { opacity: 1; }
+
+    .node-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 3px;
+      position: relative; z-index: 1;
+    }
+    .node-path {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9.5px;
+      color: var(--text-muted);
+      margin-bottom: 5px;
+      position: relative; z-index: 1;
+    }
+    .node-desc {
+      font-size: 11px;
+      font-weight: 300;
+      color: var(--text-muted);
+      line-height: 1.45;
+      position: relative; z-index: 1;
+    }
+
+    /* node size helpers */
+    .n-auto { flex: 0 0 auto; }
+    .n-grow { flex: 1 1 200px; }
+    .n-full { flex: 1 1 100%; }
+
+    /* model tags inside ORM node */
+    .model-tags {
+      display: flex; flex-wrap: wrap; gap: 5px;
+      margin-top: 9px;
+      position: relative; z-index: 1;
+    }
+    .mtag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9.5px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      border: 1px solid var(--border-mid);
+      color: var(--text-muted);
+      background: var(--surface-2);
+      letter-spacing: .04em;
+    }
+
+    /* ══════════════════════════════════════
+       CONNECTORS
+    ══════════════════════════════════════ */
+    .conn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 4px 0;
+      gap: 0;
+    }
+    .conn-line {
+      width: 1px;
+      height: 20px;
+      background: var(--border-bright);
+    }
+    .conn-pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9.5px;
+      letter-spacing: .06em;
+      color: var(--text-muted);
+      background: var(--surface);
+      border: 1px solid var(--border-mid);
+      border-radius: 20px;
+      padding: 3px 11px;
+      white-space: nowrap;
+      margin: 4px 0;
+    }
+    .conn-arrow {
+      width: 0; height: 0;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 7px solid var(--border-bright);
+    }
+
+    /* ══════════════════════════════════════
+       GRID LAYOUT (diagram)
+    ══════════════════════════════════════ */
+    .diagram {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    /* ══════════════════════════════════════
+       BOTTOM PANELS
+    ══════════════════════════════════════ */
+    .bottom-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-top: 40px;
+    }
+    @media (max-width: 700px) { .bottom-row { grid-template-columns: 1fr; } }
+
+    .panel {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--surface);
+      padding: 22px 24px;
+    }
+    .panel-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+
+    /* legend */
+    .legend-items {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .li-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      margin-top: 4px;
+      flex-shrink: 0;
+    }
+    .li-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10.5px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+    .li-desc {
+      font-size: 11px;
+      font-weight: 300;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    /* data flows */
+    .flows {
+      display: flex;
+      flex-direction: column;
+      gap: 13px;
+    }
+    .flow {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .flow-n {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      width: 19px; height: 19px;
+      border-radius: 50%;
+      border: 1px solid var(--border-mid);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-dim);
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .flow-text {
+      font-size: 11.5px;
+      font-weight: 300;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .flow-text strong {
+      font-weight: 500;
+      color: var(--text);
+    }
+    .arr {
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--border-bright);
+      font-size: 10px;
+    }
+
+    /* ══════════════════════════════════════
+       ANIMATIONS
+    ══════════════════════════════════════ */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .layer    { animation: fadeUp .5s ease both; }
+    .conn     { animation: fadeUp .5s ease both; }
+    .panel    { animation: fadeUp .5s ease both; }
+
+    .layer:nth-of-type(1)  { animation-delay: .10s; }
+    .conn:nth-of-type(2)   { animation-delay: .16s; }
+    .layer:nth-of-type(3)  { animation-delay: .22s; }
+    .conn:nth-of-type(4)   { animation-delay: .28s; }
+    .layer:nth-of-type(5)  { animation-delay: .34s; }
+    .conn:nth-of-type(6)   { animation-delay: .40s; }
+    .layer:nth-of-type(7)  { animation-delay: .46s; }
+    .conn:nth-of-type(8)   { animation-delay: .52s; }
+    .layer:nth-of-type(9)  { animation-delay: .58s; }
+    .bottom-row            { animation: fadeUp .5s .65s ease both; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ── HEADER ── -->
+  <div class="hdr">
+    <div class="hdr-eye">System Design · v0.1 · 2026</div>
+    <h1>AI Consulting Platform<br><em>Architecture Overview</em></h1>
+    <p class="hdr-sub">Logical architecture of the full-stack AI engagement management system</p>
+    <div class="badges">
+      <span class="badge">Next.js 16</span>
+      <span class="badge">React 19</span>
+      <span class="badge">TypeScript</span>
+      <span class="badge">Tailwind CSS v4</span>
+      <span class="badge">Prisma 7</span>
+      <span class="badge">SQLite</span>
+      <span class="badge">Recharts</span>
+      <span class="badge">Lucide React</span>
+    </div>
+  </div>
+
+  <!-- ── DIAGRAM ── -->
+  <div class="diagram">
+
+    <!-- ① PRESENTATION LAYER -->
+    <div class="layer" style="--lc: var(--amber)">
+      <div class="layer-head">
+        <div class="layer-dot"></div>
+        <span class="layer-name">Presentation Layer</span>
+        <span class="layer-tech">Next.js 16 App Router · Server Components</span>
+      </div>
+      <div class="layer-body">
+        <div class="nodes">
+          <div class="node n-auto" style="--lc: var(--amber)">
+            <div class="node-title">Dashboard</div>
+            <div class="node-path">app/page.tsx</div>
+            <div class="node-desc">Overview &amp; KPI stats</div>
+          </div>
+          <div class="node n-auto" style="--lc: var(--amber)">
+            <div class="node-title">Customers</div>
+            <div class="node-path">app/customers/page.tsx</div>
+            <div class="node-desc">Portfolio list &amp; create</div>
+          </div>
+          <div class="node n-auto" style="--lc: var(--amber)">
+            <div class="node-title">Customer Profile</div>
+            <div class="node-path">app/customers/[id]/page.tsx</div>
+            <div class="node-desc">5-phase journey hub</div>
+          </div>
+          <div class="node n-auto" style="--lc: var(--amber)">
+            <div class="node-title">Assessment Wizard</div>
+            <div class="node-path">app/customers/[id]/assessment/new</div>
+            <div class="node-desc">8-domain questionnaire</div>
+          </div>
+          <div class="node n-auto" style="--lc: var(--amber)">
+            <div class="node-title">Gap Analysis Report</div>
+            <div class="node-path">app/customers/[id]/report/page.tsx</div>
+            <div class="node-desc">Print &amp; PDF ready</div>
+          </div>
+          <div class="node n-auto" style="--lc: var(--amber)">
+            <div class="node-title">Use Cases</div>
+            <div class="node-path">app/use-cases/page.tsx</div>
+            <div class="node-desc">AI pipeline view</div>
+          </div>
+          <div class="node n-auto" style="--lc: var(--amber)">
+            <div class="node-title">Assessments</div>
+            <div class="node-path">app/assessments/page.tsx</div>
+            <div class="node-desc">All assessments log</div>
+          </div>
+          <div class="node n-auto" style="--lc: var(--amber)">
+            <div class="node-title">Analytics</div>
+            <div class="node-path">app/analytics/page.tsx</div>
+            <div class="node-desc">Charts &amp; aggregates</div>
+          </div>
+          <div class="node n-auto" style="--lc: var(--amber)">
+            <div class="node-title">Settings</div>
+            <div class="node-path">app/settings/page.tsx</div>
+            <div class="node-desc">Configuration</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="conn">
+      <div class="conn-line"></div>
+      <div class="conn-pill">React client hydration · props via server components</div>
+      <div class="conn-line"></div>
+      <div class="conn-arrow"></div>
+    </div>
+
+    <!-- ② COMPONENT LAYER -->
+    <div class="layer" style="--lc: var(--sky)">
+      <div class="layer-head">
+        <div class="layer-dot"></div>
+        <span class="layer-name">Component Layer</span>
+        <span class="layer-tech">React 19 · TypeScript · Tailwind CSS v4 · Lucide Icons · Recharts</span>
+      </div>
+      <div class="layer-body">
+        <div class="nodes">
+          <div class="node n-auto" style="--lc: var(--sky)">
+            <div class="node-title">Sidebar</div>
+            <div class="node-path">components/Sidebar.tsx</div>
+            <div class="node-desc">Global nav</div>
+          </div>
+          <div class="node n-grow" style="--lc: var(--sky)">
+            <div class="node-title">ProfileWorkflow + JourneyNavigator</div>
+            <div class="node-path">components/ProfileWorkflow.tsx · JourneyNavigator.tsx</div>
+            <div class="node-desc">5-phase journey UI · phase switching · progress state</div>
+          </div>
+          <div class="node n-auto" style="--lc: var(--sky)">
+            <div class="node-title">UseCaseModal</div>
+            <div class="node-path">components/UseCaseModal.tsx</div>
+            <div class="node-desc">CRUD dialog</div>
+          </div>
+          <div class="node n-grow" style="--lc: var(--sky)">
+            <div class="node-title">AnalyticsClient</div>
+            <div class="node-path">components/AnalyticsClient.tsx</div>
+            <div class="node-desc">Recharts: Radar · Bar · Pie · real DB aggregation</div>
+          </div>
+          <div class="node n-auto" style="--lc: var(--sky)">
+            <div class="node-title">DeliverablePanel</div>
+            <div class="node-path">components/DeliverablePanel.tsx</div>
+            <div class="node-desc">Phase deliverables</div>
+          </div>
+          <div class="node n-auto" style="--lc: var(--sky)">
+            <div class="node-title">PhaseSubtaskList</div>
+            <div class="node-path">components/PhaseSubtaskList.tsx</div>
+            <div class="node-desc">Task checklist</div>
+          </div>
+          <div class="node n-auto" style="--lc: var(--sky)">
+            <div class="node-title">PhaseDocuments</div>
+            <div class="node-path">components/PhaseDocuments.tsx</div>
+            <div class="node-desc">File uploads</div>
+          </div>
+          <div class="node n-auto" style="--lc: var(--sky)">
+            <div class="node-title">ReportActions</div>
+            <div class="node-path">components/ReportActions.tsx</div>
+            <div class="node-desc">Print / export</div>
+          </div>
+          <div class="node n-auto" style="--lc: var(--sky)">
+            <div class="node-title">EditProfileModal</div>
+            <div class="node-path">components/EditProfileModal.tsx</div>
+            <div class="node-desc">Customer editor</div>
+          </div>
+          <div class="node n-auto" style="--lc: var(--sky)">
+            <div class="node-title">SearchInput · UseCaseFilters</div>
+            <div class="node-path">components/SearchInput.tsx · UseCaseFilters.tsx</div>
+            <div class="node-desc">Filtering UI</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="conn">
+      <div class="conn-line"></div>
+      <div class="conn-pill">Next.js Server Actions · form submissions · API route calls</div>
+      <div class="conn-line"></div>
+      <div class="conn-arrow"></div>
+    </div>
+
+    <!-- ③ BUSINESS LOGIC LAYER -->
+    <div class="layer" style="--lc: var(--emerald)">
+      <div class="layer-head">
+        <div class="layer-dot"></div>
+        <span class="layer-name">Business Logic Layer</span>
+        <span class="layer-tech">Server Actions · API Routes · Domain Engines</span>
+      </div>
+      <div class="layer-body">
+        <div class="nodes">
+          <div class="node n-grow" style="--lc: var(--emerald)">
+            <div class="node-title">Server Actions</div>
+            <div class="node-path">app/actions.ts</div>
+            <div class="node-desc">createCustomer · getCustomers · saveAssessment · addUseCase · getAllUseCases · getAllAssessments · updateCustomerPhase</div>
+          </div>
+          <div class="node n-grow" style="--lc: var(--emerald)">
+            <div class="node-title">Assessment Engine</div>
+            <div class="node-path">lib/assessment-data.ts · lib/ai-advisor.ts</div>
+            <div class="node-desc">8-domain question bank · calculateWeightedScore() · generateRecommendations()</div>
+          </div>
+          <div class="node n-grow" style="--lc: var(--emerald)">
+            <div class="node-title">Methodology + Deliverable Engine</div>
+            <div class="node-path">lib/methodology.ts · lib/deliverable-generators.ts</div>
+            <div class="node-desc">5-phase task definitions · auto-generated deliverable markdown content per phase</div>
+          </div>
+          <div class="node n-auto" style="--lc: var(--emerald)">
+            <div class="node-title">Upload API</div>
+            <div class="node-path">app/api/upload/route.ts</div>
+            <div class="node-desc">Multipart file<br>ingestion · POST</div>
+          </div>
+          <div class="node n-auto" style="--lc: var(--emerald)">
+            <div class="node-title">Files API</div>
+            <div class="node-path">app/api/files/[...path]/route.ts</div>
+            <div class="node-desc">Static file serving<br>via GET</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="conn">
+      <div class="conn-line"></div>
+      <div class="conn-pill">Prisma Client · better-sqlite3 driver adapter</div>
+      <div class="conn-line"></div>
+      <div class="conn-arrow"></div>
+    </div>
+
+    <!-- ④ ORM LAYER -->
+    <div class="layer" style="--lc: var(--violet)">
+      <div class="layer-head">
+        <div class="layer-dot"></div>
+        <span class="layer-name">ORM Layer</span>
+        <span class="layer-tech">Prisma 7 · Schema-first · Driver Adapters (preview)</span>
+      </div>
+      <div class="layer-body">
+        <div class="nodes">
+          <div class="node n-full" style="--lc: var(--violet)">
+            <div class="node-title">Prisma Client</div>
+            <div class="node-path">lib/prisma.ts · prisma/schema.prisma · prisma.config.ts</div>
+            <div class="node-desc">Singleton client · type-safe queries · 6 relational models with cascading deletes</div>
+            <div class="model-tags">
+              <span class="mtag">Customer</span>
+              <span class="mtag">Assessment</span>
+              <span class="mtag">UseCase</span>
+              <span class="mtag">PhaseTask</span>
+              <span class="mtag">Deliverable</span>
+              <span class="mtag">Document</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="conn">
+      <div class="conn-line"></div>
+      <div class="conn-pill">SQL queries · local file I/O</div>
+      <div class="conn-line"></div>
+      <div class="conn-arrow"></div>
+    </div>
+
+    <!-- ⑤ PERSISTENCE LAYER -->
+    <div class="layer" style="--lc: var(--rose)">
+      <div class="layer-head">
+        <div class="layer-dot"></div>
+        <span class="layer-name">Persistence Layer</span>
+        <span class="layer-tech">Local Storage · SQLite + File System</span>
+      </div>
+      <div class="layer-body">
+        <div class="nodes">
+          <div class="node n-grow" style="--lc: var(--rose)">
+            <div class="node-title">SQLite Database</div>
+            <div class="node-path">dev.db</div>
+            <div class="node-desc">Embedded relational DB · all structured data for customers, assessments, use cases, phase tasks, deliverables, and document metadata</div>
+          </div>
+          <div class="node n-grow" style="--lc: var(--rose)">
+            <div class="node-title">File System</div>
+            <div class="node-path">/uploads/</div>
+            <div class="node-desc">Binary uploads organized by customer &amp; phase · customer documents, deliverables, meeting notes · referenced by Document records in DB</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /diagram -->
+
+  <!-- ── BOTTOM PANELS ── -->
+  <div class="bottom-row">
+
+    <!-- LEGEND -->
+    <div class="panel">
+      <div class="panel-title">Layer Index</div>
+      <div class="legend-items">
+        <div class="li">
+          <div class="li-dot" style="background:var(--amber); box-shadow:0 0 6px var(--amber)"></div>
+          <div>
+            <div class="li-name">Presentation</div>
+            <div class="li-desc">9 Next.js pages — routing, server rendering, data fetching boundary</div>
+          </div>
+        </div>
+        <div class="li">
+          <div class="li-dot" style="background:var(--sky); box-shadow:0 0 6px var(--sky)"></div>
+          <div>
+            <div class="li-name">Components</div>
+            <div class="li-desc">React 19 client components — UI, interactivity, chart rendering</div>
+          </div>
+        </div>
+        <div class="li">
+          <div class="li-dot" style="background:var(--emerald); box-shadow:0 0 6px var(--emerald)"></div>
+          <div>
+            <div class="li-name">Business Logic</div>
+            <div class="li-desc">Server Actions, assessment scoring, methodology engine, API routes</div>
+          </div>
+        </div>
+        <div class="li">
+          <div class="li-dot" style="background:var(--violet); box-shadow:0 0 6px var(--violet)"></div>
+          <div>
+            <div class="li-name">ORM</div>
+            <div class="li-desc">Prisma 7 — type-safe schema, client singleton, query builder</div>
+          </div>
+        </div>
+        <div class="li">
+          <div class="li-dot" style="background:var(--rose); box-shadow:0 0 6px var(--rose)"></div>
+          <div>
+            <div class="li-name">Persistence</div>
+            <div class="li-desc">SQLite database + local file system for binary uploads</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DATA FLOWS -->
+    <div class="panel">
+      <div class="panel-title">Key Data Flows</div>
+      <div class="flows">
+        <div class="flow">
+          <div class="flow-n">1</div>
+          <div class="flow-text">
+            <strong>Page request</strong> <span class="arr">→</span> Server Component fetches via Server Actions <span class="arr">→</span> Prisma queries SQLite <span class="arr">→</span> HTML streamed to browser
+          </div>
+        </div>
+        <div class="flow">
+          <div class="flow-n">2</div>
+          <div class="flow-text">
+            <strong>Assessment submit</strong> <span class="arr">→</span> calculateWeightedScore() <span class="arr">→</span> generateRecommendations() <span class="arr">→</span> saveAssessment() persists 8 domain scores
+          </div>
+        </div>
+        <div class="flow">
+          <div class="flow-n">3</div>
+          <div class="flow-text">
+            <strong>File upload</strong> <span class="arr">→</span> POST /api/upload <span class="arr">→</span> written to /uploads/ <span class="arr">→</span> Document record saved in DB <span class="arr">→</span> served via /api/files/[…path]
+          </div>
+        </div>
+        <div class="flow">
+          <div class="flow-n">4</div>
+          <div class="flow-text">
+            <strong>Analytics dashboard</strong> <span class="arr">→</span> getAllAssessments() aggregates domain scores <span class="arr">→</span> passed to AnalyticsClient <span class="arr">→</span> Recharts renders Radar / Bar / Pie
+          </div>
+        </div>
+        <div class="flow">
+          <div class="flow-n">5</div>
+          <div class="flow-text">
+            <strong>Gap analysis report</strong> <span class="arr">→</span> customer + assessment fetched <span class="arr">→</span> scores mapped to gap matrix <span class="arr">→</span> rendered as print-ready HTML / PDF
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /bottom-row -->
+
+</div><!-- /wrap -->
+</body>
+</html>
