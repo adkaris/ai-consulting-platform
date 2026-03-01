@@ -1,0 +1,69 @@
+'use client'
+
+import { useRouter, usePathname, useSearchParams } from 'next/navigation'
+
+const PRIORITIES = ['ALL', 'HIGH', 'MEDIUM', 'LOW'] as const
+const SORT_OPTIONS = [
+    { value: 'date', label: 'Newest' },
+    { value: 'roi', label: 'Highest ROI' },
+    { value: 'priority', label: 'Priority' },
+]
+
+export default function UseCaseFilters() {
+    const router = useRouter()
+    const pathname = usePathname()
+    const searchParams = useSearchParams()
+
+    const activePriority = searchParams.get('priority') ?? 'ALL'
+    const activeSort = searchParams.get('sort') ?? 'date'
+
+    const update = (key: string, value: string) => {
+        const params = new URLSearchParams(searchParams.toString())
+        if (value === 'ALL' || value === 'date') {
+            params.delete(key)
+        } else {
+            params.set(key, value)
+        }
+        router.replace(`${pathname}?${params.toString()}`)
+    }
+
+    return (
+        <div className="flex flex-wrap items-center gap-3">
+            {/* Priority Filter */}
+            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+                {PRIORITIES.map(p => (
+                    <button
+                        type="button"
+                        key={p}
+                        onClick={() => update('priority', p)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                            activePriority === p
+                                ? 'bg-white shadow-sm text-slate-900'
+                                : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                    >
+                        {p === 'ALL' ? 'All' : p.charAt(0) + p.slice(1).toLowerCase()}
+                    </button>
+                ))}
+            </div>
+
+            {/* Sort */}
+            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+                {SORT_OPTIONS.map(s => (
+                    <button
+                        type="button"
+                        key={s.value}
+                        onClick={() => update('sort', s.value)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                            activeSort === s.value
+                                ? 'bg-white shadow-sm text-slate-900'
+                                : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                    >
+                        {s.label}
+                    </button>
+                ))}
+            </div>
+        </div>
+    )
+}

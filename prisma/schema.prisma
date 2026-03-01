@@ -1,0 +1,114 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Customer {
+  id             String       @id @default(cuid())
+  name           String
+  industry       String?
+  employees      String?      // e.g. "100-500"
+  ambitionLevel  Int?         // 1-5
+  currentPhase   Int          @default(1) // 1 to 5
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  assessments    Assessment[]
+  useCases       UseCase[]
+  phaseTasks     PhaseTask[]
+  deliverables   Deliverable[]
+  documents      Document[]
+}
+
+model Assessment {
+  id                  String    @id @default(cuid())
+  customerId          String
+  customer            Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  // 8 Core Domains - Maturity Scores (1-5)
+  scoreStrategy       Float?
+  scoreData           Float?
+  scoreTech           Float?
+  scoreSecurity       Float?
+  scoreSkills         Float?
+  scoreOps            Float?
+  scoreGovernance     Float?
+  scoreFinancial      Float?
+
+  status              String    @default("IN_PROGRESS") // DRAFT, COMPLETED
+  completedAt         DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+}
+
+model UseCase {
+  id                  String    @id @default(cuid())
+  customerId          String
+  customer            Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  title               String
+  description         String?
+  department          String?
+
+  expectedBenefits    String?
+  roiEstimate         Float?    // Financial or time ROI
+  priority            String?   // HIGH, MEDIUM, LOW
+
+  phase               Int       @default(2)
+  status              String    @default("DRAFT") // APPROVED, PILOTING, PRODUCTION
+
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+}
+
+model PhaseTask {
+  id          String    @id @default(cuid())
+  customerId  String
+  customer    Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  phaseNumber Int
+  taskKey     String    // e.g. "stakeholder_alignment"
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([customerId, phaseNumber, taskKey])
+}
+
+model Deliverable {
+  id               String    @id @default(cuid())
+  customerId       String
+  customer         Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  phaseNumber      Int
+  deliverableKey   String    // e.g. "readiness_report"
+  status           String    @default("PENDING") // PENDING | DRAFT | COMPLETED
+  generatedContent String?   // auto-generated markdown draft
+  generatedAt      DateTime?
+  completedAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@unique([customerId, phaseNumber, deliverableKey])
+}
+
+model Document {
+  id          String   @id @default(cuid())
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  phaseNumber Int
+  taskKey     String?  // optional: attach to specific subtask
+  fileName    String
+  fileSize    Int
+  mimeType    String
+  filePath    String   // relative path under /uploads/
+  category    String   @default("OTHER") // CUSTOMER_DOC | DELIVERABLE | MEETING_NOTES | OTHER
+  uploadedAt  DateTime @default(now())
+}
