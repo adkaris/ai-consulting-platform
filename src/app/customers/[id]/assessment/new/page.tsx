@@ -43,8 +43,8 @@ export default function NewAssessmentPage({ params }: { params: Promise<{ id: st
                 domainAverages[domain.id] = parseFloat(weightedAvg.toFixed(2))
             })
 
-            await saveAssessment(customerId, domainAverages)
-            router.push(`/customers/${customerId}`)
+            const assessment = await saveAssessment(customerId, domainAverages)
+            router.push(`/customers/${customerId}/assessment/results?assessmentId=${assessment.id}`)
         } catch (error) {
             console.error('Failed to save assessment:', error)
             alert('Error saving assessment. Please try again.')

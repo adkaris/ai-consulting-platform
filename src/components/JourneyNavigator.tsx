@@ -58,7 +58,7 @@ export default function JourneyNavigator({
                         key={phase.num}
                         onClick={() => onPhaseSelect(phase.num)}
                         className={`relative flex gap-4 transition-all duration-300 p-3 -m-1 rounded-xl cursor-pointer group/phase 
-                            ${isSelected ? 'bg-blue-50/80 outline outline-1 outline-blue-200 shadow-sm' : 'hover:bg-slate-50'}
+                            ${isSelected ? 'bg-blue-50/80 outline outline-1 outline-blue-200 shadow-sm glass' : 'hover:bg-slate-50'}
                         `}
                     >
                         {idx !== 4 && (

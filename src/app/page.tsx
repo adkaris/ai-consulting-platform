@@ -1,5 +1,6 @@
 import { getCustomers, getAllAssessments, getAllUseCases } from './actions'
-import { Users, FileText, Activity, Building2, ArrowRight, Zap, Gauge } from 'lucide-react'
+import { Users, Gauge, TrendingUp, ArrowRight } from 'lucide-react'
+import DashboardClient from '@/components/DashboardClient'
 import Link from 'next/link'
 
 export default async function Dashboard() {
@@ -10,29 +11,49 @@ export default async function Dashboard() {
   ])
 
   const totalRoi = useCases.reduce((sum, uc) => sum + (uc.roiEstimate || 0), 0)
-  const inProgressAssessments = assessments.filter(a => a.status === 'IN_PROGRESS').length
+  const realizedRoi = useCases
+    .filter(uc => uc.status === 'PRODUCTION')
+    .reduce((sum, uc) => sum + (uc.roiEstimate || 0), 0)
+
+  // Calculate Average Maturity Across 8 Domains
+  const domainAverages = assessments.length > 0 ? {
+    Strategy: assessments.reduce((acc, a) => acc + (a.scoreStrategy || 0), 0) / assessments.length,
+    Data: assessments.reduce((acc, a) => acc + (a.scoreData || 0), 0) / assessments.length,
+    Tech: assessments.reduce((acc, a) => acc + (a.scoreTech || 0), 0) / assessments.length,
+    Security: assessments.reduce((acc, a) => acc + (a.scoreSecurity || 0), 0) / assessments.length,
+    Skills: assessments.reduce((acc, a) => acc + (a.scoreSkills || 0), 0) / assessments.length,
+    Ops: assessments.reduce((acc, a) => acc + (a.scoreOps || 0), 0) / assessments.length,
+    Governance: assessments.reduce((acc, a) => acc + (a.scoreGovernance || 0), 0) / assessments.length,
+    Finance: assessments.reduce((acc, a) => acc + (a.scoreFinancial || 0), 0) / assessments.length,
+  } : null
+
+  // Calculate Phase Distribution
+  const phaseDist = [1, 2, 3, 4, 5].map(p => ({
+    phase: p,
+    count: customers.filter(c => c.currentPhase === p).length
+  }))
 
   const stats = [
     {
-      name: 'Total Customers',
+      name: 'Total Portfolio ROI',
+      value: `$${totalRoi.toLocaleString()}`,
+      icon: TrendingUp,
+      sub: realizedRoi > 0 ? `$${realizedRoi.toLocaleString()} realized in Production` : 'All potential value',
+      changeType: 'positive' as const,
+    },
+    {
+      name: 'Active Engagements',
       value: customers.length.toString(),
       icon: Users,
-      sub: customers.length === 0 ? 'No customers yet' : `${customers.filter(c => c.currentPhase > 1).length} past Phase 1`,
+      sub: `${customers.filter(c => c.currentPhase >= 3).length} in execution phases`,
       changeType: 'neutral' as const,
     },
     {
-      name: 'Completed Assessments',
-      value: assessments.length.toString(),
-      icon: Activity,
-      sub: inProgressAssessments > 0 ? `${inProgressAssessments} in progress` : 'All completed',
+      name: 'Portfolio Maturity',
+      value: domainAverages ? (Object.values(domainAverages).reduce((a, b) => a + b, 0) / 8).toFixed(1) : '0.0',
+      icon: Gauge,
+      sub: 'Avg. score across 8 domains',
       changeType: 'neutral' as const,
-    },
-    {
-      name: 'Portfolio ROI Potential',
-      value: `$${totalRoi.toLocaleString()}`,
-      icon: FileText,
-      sub: `Across ${useCases.length} use case${useCases.length !== 1 ? 's' : ''}`,
-      changeType: 'positive' as const,
     },
   ]
 
@@ -50,94 +71,48 @@ export default async function Dashboard() {
   const recentCustomers = customers.slice(0, 5)
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-150 fill-mode-both">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900 mb-2">AI Journey Portfolio</h1>
-        <p className="text-slate-500">Manage consulting engagements, assessments, and AI transition roadmaps.</p>
+    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both">
+      <div className="flex justify-between items-end">
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.2em] font-black text-blue-600 mb-2">Executive Overview</p>
+          <h1 className="text-4xl font-black tracking-tight text-slate-900">Portfolio Intelligence</h1>
+        </div>
+        <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl shadow-sm">
+          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="text-xs font-bold text-slate-600">Live Strategy Feed</span>
+        </div>
       </div>
 
-      {/* Live Stats */}
+      {/* Primary KPI Grid */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {stats.map((item) => (
           <div
             key={item.name}
-            className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:border-slate-300 hover:shadow-md transition-all"
+            className="group relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-8 shadow-sm hover:border-blue-300 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-500"
           >
-            <div className="flex items-center justify-between mb-4">
-              <p className="truncate text-sm font-medium text-slate-500">{item.name}</p>
-              <item.icon className="h-5 w-5 text-blue-600" aria-hidden="true" />
+            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl -mr-16 -mt-16 transition-all group-hover:bg-blue-500/10" />
+            <div className="flex items-center justify-between mb-6">
+              <div className="p-3 bg-slate-50 rounded-2xl text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors duration-500">
+                <item.icon className="h-6 w-6" aria-hidden="true" />
+              </div>
             </div>
-            <div className="flex items-baseline mb-2">
-              <p className="text-3xl font-bold text-slate-900 tracking-tight">{item.value}</p>
+            <div className="space-y-1">
+              <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">{item.name}</p>
+              <p className="text-4xl font-black text-slate-900 tracking-tight">{item.value}</p>
             </div>
-            <p className="text-xs font-medium mt-3 border-t border-slate-100 pt-3">
-              <span className={item.changeType === 'positive' ? 'text-emerald-600' : 'text-slate-500'}>
+            <div className="mt-6 flex items-center justify-between border-t border-slate-50 pt-6">
+              <span className={`text-xs font-bold ${item.changeType === 'positive' ? 'text-emerald-600' : 'text-slate-500'}`}>
                 {item.sub}
               </span>
-            </p>
+              <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+            </div>
           </div>
         ))}
       </div>
 
-      {/* Recent Engagements */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900 mb-1">Recent Engagements</h2>
-            <p className="text-sm text-slate-500">Activity across AI consulting portfolio.</p>
-          </div>
-          <Link
-            href="/customers"
-            className="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors"
-          >
-            View all <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
+      {/* Interactive Charts & Tables */}
+      <DashboardClient customers={customers} assessments={assessments} useCases={useCases} />
 
-        {recentCustomers.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-12 text-center rounded-xl border border-dashed border-slate-300 bg-slate-50/50">
-            <Users className="h-10 w-10 text-slate-400 mb-4" />
-            <h3 className="text-slate-700 font-medium mb-1">No customers yet</h3>
-            <p className="text-slate-500 text-sm max-w-sm">Get started by adding a customer profile to track their AI journey and assess readiness.</p>
-            <Link
-              href="/customers"
-              className="mt-6 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
-            >
-              + New Customer
-            </Link>
-          </div>
-        ) : (
-          <div className="divide-y divide-slate-100">
-            {recentCustomers.map((customer) => (
-              <div key={customer.id} className="flex items-center justify-between py-4 group">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0">
-                    <Building2 className="w-5 h-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors">{customer.name}</p>
-                    <p className="text-xs text-slate-500 flex items-center gap-1.5 mt-0.5">
-                      <Gauge className="w-3 h-3" />
-                      Phase {customer.currentPhase}: {formatPhase(customer.currentPhase)}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <span className="hidden sm:block text-xs font-semibold text-slate-400 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200">
-                    {customer.industry || 'General'}
-                  </span>
-                  <Link
-                    href={`/customers/${customer.id}`}
-                    className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                  >
-                    <Zap className="w-4 h-4" />
-                  </Link>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
     </div>
   )
 }

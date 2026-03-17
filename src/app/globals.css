@@ -15,4 +15,41 @@
 body {
   background: var(--background);
   color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-white/70 backdrop-blur-md border border-white/20;
+  }
+  
+  .glass-dark {
+    @apply bg-slate-900/40 backdrop-blur-md border border-slate-700/30;
+  }
+
+  .premium-shadow {
+    box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.05);
+  }
+
+  .premium-shadow-hover {
+    @apply transition-all duration-500 hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)];
+  }
+
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+    100% { transform: translateY(0px); }
+  }
+
+  /* Support for dynamic progress bars/charts */
+  [style*="--width"] {
+    width: var(--width);
+  }
+  [style*="--height"] {
+    height: var(--height);
+  }
 }

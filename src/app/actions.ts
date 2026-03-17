@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { unlink } from 'fs/promises'
 import path from 'path'
 import { generateDeliverableContent } from '@/lib/deliverable-generators'
+import { convertMarkdownToDocx } from '@/lib/docx-utils'
 
 export async function createCustomer(formData: FormData) {
     const name = formData.get('name') as string
@@ -32,7 +33,7 @@ export async function getCustomers() {
 }
 
 export async function saveAssessment(customerId: string, scores: Record<string, number>) {
-    await prisma.assessment.create({
+    const assessment = await prisma.assessment.create({
         data: {
             customerId,
             scoreStrategy: scores['Strategy'],
@@ -56,6 +57,8 @@ export async function saveAssessment(customerId: string, scores: Record<string, 
 
     revalidatePath(`/customers/${customerId}`)
     revalidatePath('/')
+    
+    return assessment
 }
 
 export async function addUseCase(customerId: string, formData: FormData) {
@@ -76,6 +79,37 @@ export async function addUseCase(customerId: string, formData: FormData) {
             status: 'DRAFT',
             phase: 2
         }
+    })
+
+    revalidatePath(`/customers/${customerId}`)
+}
+
+export async function updateUseCase(useCaseId: string, customerId: string, formData: FormData) {
+    const title = formData.get('title') as string
+    const description = formData.get('description') as string
+    const department = formData.get('department') as string
+    const priority = formData.get('priority') as string
+    const status = formData.get('status') as string
+    const roiEstimate = formData.get('roiEstimate') ? Number(formData.get('roiEstimate')) : null
+
+    await prisma.useCase.update({
+        where: { id: useCaseId },
+        data: {
+            title,
+            description,
+            department,
+            priority,
+            status,
+            roiEstimate
+        }
+    })
+
+    revalidatePath(`/customers/${customerId}`)
+}
+
+export async function deleteUseCase(useCaseId: string, customerId: string) {
+    await prisma.useCase.delete({
+        where: { id: useCaseId }
     })
 
     revalidatePath(`/customers/${customerId}`)
@@ -242,4 +276,18 @@ export async function getCustomerPhaseData(customerId: string) {
         prisma.document.findMany({ where: { customerId }, orderBy: { uploadedAt: 'desc' } }),
     ])
     return { tasks, deliverables, documents }
+}
+
+export async function downloadDeliverableWord(deliverableId: string) {
+    const record = await prisma.deliverable.findUnique({
+        where: { id: deliverableId },
+        include: { customer: true }
+    })
+
+    if (!record || !record.generatedContent) {
+        throw new Error('Deliverable content not found.')
+    }
+
+    const buffer = await convertMarkdownToDocx(record.deliverableKey.replace(/_/g, ' '), record.generatedContent)
+    return buffer.toString('base64')
 }

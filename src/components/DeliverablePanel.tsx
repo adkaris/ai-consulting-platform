@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useTransition, useRef } from 'react'
-import { Sparkles, CheckCircle2, Clock, FileText, Upload, X, ExternalLink } from 'lucide-react'
-import { generateDeliverable, updateDeliverableStatus } from '@/app/actions'
+import { Sparkles, CheckCircle2, Clock, FileText, Upload, X, ExternalLink, Download } from 'lucide-react'
+import { generateDeliverable, updateDeliverableStatus, downloadDeliverableWord } from '@/app/actions'
 import type { DeliverableDef } from '@/lib/methodology'
 
 interface DeliverableRecord {
@@ -99,6 +99,34 @@ export default function DeliverablePanel({
             setUploading(false)
         }
     }
+    const [downloading, setDownloading] = useState(false)
+
+    const handleDownloadWord = async () => {
+        if (!record?.id) return
+        setDownloading(true)
+        try {
+            const base64 = await downloadDeliverableWord(record.id)
+            const binaryString = window.atob(base64)
+            const bytes = new Uint8Array(binaryString.length)
+            for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i)
+            }
+            const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' })
+            const url = window.URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = `${definition.title.replace(/\s+/g, '_')}.docx`
+            document.body.appendChild(a)
+            a.click()
+            window.URL.revokeObjectURL(url)
+            document.body.removeChild(a)
+        } catch (error) {
+            console.error(error)
+            alert('Failed to download Word document.')
+        } finally {
+            setDownloading(false)
+        }
+    }
 
     return (
         <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
@@ -136,6 +164,17 @@ export default function DeliverablePanel({
                         >
                             <FileText className="h-3.5 w-3.5" />
                             {showContent ? 'Hide' : 'View Draft'}
+                        </button>
+                    )}
+                    {record?.generatedContent && (
+                        <button
+                            type="button"
+                            onClick={handleDownloadWord}
+                            disabled={downloading}
+                            className="flex items-center gap-1.5 px-3 py-1.5 border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+                        >
+                            <Download className={`h-3.5 w-3.5 ${downloading ? 'animate-bounce' : ''}`} />
+                            {downloading ? 'Downloading...' : 'Download Word'}
                         </button>
                     )}
                     {status === 'DRAFT' && (

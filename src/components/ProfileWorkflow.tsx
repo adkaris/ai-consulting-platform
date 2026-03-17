@@ -4,11 +4,12 @@ import { useState } from 'react'
 import JourneyNavigator from './JourneyNavigator'
 import {
     Building2, Plus, Calendar, Activity, Zap, ArrowRight, Gauge, ShieldAlert, Sparkles,
-    Rocket, Users, BarChart3, CheckSquare, Target, Clock, TrendingUp, Handshake, BookOpen, ListTodo
+    Rocket, Users, BarChart3, CheckSquare, Target, Clock, TrendingUp, Handshake, BookOpen, ListTodo, ChevronRight
 } from 'lucide-react'
 import Link from 'next/link'
 import UseCaseModal from './UseCaseModal'
 import { generateRecommendations } from '@/lib/ai-advisor'
+import { generateDeliverable } from '@/app/actions'
 import { METHODOLOGY, getPhase } from '@/lib/methodology'
 import PhaseSubtaskList from './PhaseSubtaskList'
 import DeliverablePanel from './DeliverablePanel'
@@ -57,6 +58,20 @@ interface ProfileWorkflowProps {
 
 export default function ProfileWorkflow({ customer, phaseData }: ProfileWorkflowProps) {
     const [selectedPhase, setSelectedPhase] = useState(customer.currentPhase || 1)
+    const [generating, setGenerating] = useState(false)
+
+    const handleGlobalGenerate = async (key: string, phase: number) => {
+        setGenerating(true)
+        try {
+            await generateDeliverable(customer.id, phase, key)
+            // Scroll to deliverables if possible or just show success
+        } catch (error) {
+            console.error('Failed to generate deliverable:', error)
+            alert('Error generating document.')
+        } finally {
+            setGenerating(false)
+        }
+    }
 
     const renderMethodologySection = (phaseNumber: number) => {
         const phase = getPhase(phaseNumber)
@@ -146,7 +161,7 @@ export default function ProfileWorkflow({ customer, phaseData }: ProfileWorkflow
                                                 <div className="w-full bg-slate-200 h-1.5 rounded-full mt-2 overflow-hidden">
                                                     <div
                                                         className="bg-indigo-600 h-full rounded-full transition-all duration-1000"
-                                                        style={{ width: `${((domain.score || 0) / 5) * 100}%` } as React.CSSProperties}
+                                                        style={{ '--width': `${((domain.score || 0) / 5) * 100}%` } as React.CSSProperties}
                                                     />
                                                 </div>
                                             </div>
@@ -211,14 +226,15 @@ export default function ProfileWorkflow({ customer, phaseData }: ProfileWorkflow
                                         ))
                                     }
                                 </div>
-                                <Link
-                                    href={`/customers/${customer.id}/report`}
-                                    className="block w-full text-center py-4 text-sm font-black text-white bg-indigo-600 hover:bg-indigo-700 rounded-2xl transition-all mt-6 shadow-xl shadow-indigo-200 flex items-center justify-center gap-2 group"
+                                <button
+                                    onClick={() => handleGlobalGenerate('readiness_report', 1)}
+                                    disabled={generating}
+                                    className="block w-full text-center py-4 text-sm font-black text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-2xl transition-all mt-6 shadow-xl shadow-indigo-200 flex items-center justify-center gap-2 group"
                                 >
-                                    <Sparkles className="w-5 h-5 animate-pulse" />
-                                    Generate Intelligence Report & Strategy Map
-                                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                                </Link>
+                                    <Sparkles className={`w-5 h-5 ${generating ? 'animate-spin' : 'animate-pulse'}`} />
+                                    {generating ? 'Processing Data...' : 'Generate Intelligence Report & Strategy Map'}
+                                    {!generating && <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
+                                </button>
                             </div>
                         )}
 
@@ -266,17 +282,26 @@ export default function ProfileWorkflow({ customer, phaseData }: ProfileWorkflow
                                                 <div>
                                                     <h4 className="text-md font-black text-slate-900 mb-1">{uc.title}</h4>
                                                     <div className="flex items-center gap-3">
-                                                        <span className="text-[10px] uppercase tracking-widest font-black text-slate-400 flex items-center gap-1">
-                                                            <Activity className="w-3 h-3" /> {uc.status}
+                                                        <span className={`px-2 py-0.5 rounded-[4px] text-[9px] font-black uppercase tracking-widest border ${
+                                                            uc.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
+                                                            uc.status === 'PILOTING' ? 'bg-blue-50 text-blue-700 border-blue-100' :
+                                                            'bg-slate-50 text-slate-500 border-slate-200'
+                                                        }`}>
+                                                            {uc.status}
                                                         </span>
                                                         <span className="w-1 h-1 rounded-full bg-slate-300" />
                                                         <span className="text-[10px] uppercase tracking-widest font-black text-blue-600">{uc.priority} Priority</span>
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div className="text-right">
-                                                <p className="text-lg font-black text-slate-900">{uc.roiEstimate ? `$${uc.roiEstimate.toLocaleString()}` : 'Valuating...'}</p>
-                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Projected ROI</p>
+                                            <div className="text-right flex items-center gap-6">
+                                                <div>
+                                                    <p className="text-lg font-black text-slate-900 leading-none">{uc.roiEstimate ? `$${uc.roiEstimate.toLocaleString()}` : 'Valuating...'}</p>
+                                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">Projected ROI</p>
+                                                </div>
+                                                <div className="p-2 text-slate-300 group-hover:text-blue-600 transition-colors">
+                                                    <ChevronRight className="w-5 h-5" />
+                                                </div>
                                             </div>
                                         </div>
                                     ))}

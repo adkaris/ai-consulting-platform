@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Building2, Calendar, Activity, Sparkles } from 'lucide-react'
 import ProfileWorkflow from '@/components/ProfileWorkflow'
 import EditProfileModal from '@/components/EditProfileModal'
+import GenerateReportButton from '@/components/GenerateReportButton'
 import { getCustomerPhaseData } from '@/app/actions'
 
 export default async function CustomerProfile({ params }: { params: Promise<{ id: string }> }) {
@@ -44,12 +45,7 @@ export default async function CustomerProfile({ params }: { params: Promise<{ id
 
                 <div className="flex space-x-3">
                     <EditProfileModal customer={customer} />
-                    <Link
-                        href={`/customers/${id}/report`}
-                        className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-medium transition-colors shadow-sm flex items-center gap-2"
-                    >
-                        <Sparkles className="w-4 h-4" /> Generate Report
-                    </Link>
+                    <GenerateReportButton customerId={id} />
                 </div>
             </div>
 
