@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useRef } from 'react'
 import { Sparkles, CheckCircle2, Clock, FileText, Upload, X, ExternalLink, Download } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { generateDeliverable, updateDeliverableStatus, downloadDeliverableWord } from '@/app/actions'
 import type { DeliverableDef } from '@/lib/methodology'
 
@@ -53,6 +54,7 @@ export default function DeliverablePanel({
     record,
     documents,
 }: DeliverablePanelProps) {
+    const router = useRouter()
     const [, startTransition] = useTransition()
     const [showContent, setShowContent] = useState(false)
     const [uploading, setUploading] = useState(false)
@@ -70,6 +72,7 @@ export default function DeliverablePanel({
         setGenerating(true)
         try {
             await generateDeliverable(customerId, phaseNumber, definition.key)
+            router.refresh()
             setShowContent(true)
         } finally {
             setGenerating(false)

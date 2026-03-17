@@ -1,10 +1,11 @@
 import prisma from '@/lib/prisma'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { Building2, Calendar, Activity, Sparkles } from 'lucide-react'
+import { Building2, Calendar, Activity, Sparkles, BrainCircuit } from 'lucide-react'
 import ProfileWorkflow from '@/components/ProfileWorkflow'
 import EditProfileModal from '@/components/EditProfileModal'
 import GenerateReportButton from '@/components/GenerateReportButton'
+import ExportPptxButton from '@/components/ExportPptxButton'
 import { getCustomerPhaseData } from '@/app/actions'
 
 export default async function CustomerProfile({ params }: { params: Promise<{ id: string }> }) {
@@ -44,6 +45,14 @@ export default async function CustomerProfile({ params }: { params: Promise<{ id
                 </div>
 
                 <div className="flex space-x-3">
+                    <Link
+                        href={`/customers/${id}/intake`}
+                        className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-xl text-sm font-bold border border-indigo-100 hover:bg-indigo-100 transition-all shadow-sm"
+                    >
+                        <BrainCircuit className="w-4 h-4" />
+                        AI Intake
+                    </Link>
+                    <ExportPptxButton customerId={id} customerName={customer.name} />
                     <EditProfileModal customer={customer} />
                     <GenerateReportButton customerId={id} />
                 </div>

@@ -6,6 +6,10 @@ import { unlink } from 'fs/promises'
 import path from 'path'
 import { generateDeliverableContent } from '@/lib/deliverable-generators'
 import { convertMarkdownToDocx } from '@/lib/docx-utils'
+import { METHODOLOGY } from '@/lib/methodology'
+import { USE_CASE_TEMPLATES } from '@/lib/use-case-templates'
+import { analyzeMeetingNotes, IntakeResults } from '@/lib/ai-intake'
+import { generateCustomerPptx } from '@/lib/pptx-utils'
 
 export async function createCustomer(formData: FormData) {
     const name = formData.get('name') as string
@@ -291,3 +295,174 @@ export async function downloadDeliverableWord(deliverableId: string) {
     const buffer = await convertMarkdownToDocx(record.deliverableKey.replace(/_/g, ' '), record.generatedContent)
     return buffer.toString('base64')
 }
+
+// ─── Action Plan Aggregation ──────────────────────────────────────────────────
+
+export type PendingActionItem = {
+    id: string
+    type: 'TASK' | 'DELIVERABLE'
+    title: string
+    description: string
+    customerName: string
+    customerId: string
+    phase: number
+    key: string
+    hasDraft?: boolean
+}
+
+export async function getPendingConsultantWork(): Promise<PendingActionItem[]> {
+    const customers = await prisma.customer.findMany({
+        include: {
+            phaseTasks: true,
+            deliverables: true,
+        }
+    })
+
+    const pendingItems: PendingActionItem[] = []
+
+    for (const customer of customers) {
+        if (customer.currentPhase > 5) continue
+
+        const phaseDef = METHODOLOGY.find(p => p.number === customer.currentPhase)
+        if (!phaseDef) continue
+
+        // Check Phase Tasks
+        for (const subtask of phaseDef.subtasks) {
+            const isCompleted = customer.phaseTasks.find(pt => pt.phaseNumber === phaseDef.number && pt.taskKey === subtask.key)?.completed
+            if (!isCompleted) {
+                pendingItems.push({
+                    id: `task-${customer.id}-${phaseDef.number}-${subtask.key}`,
+                    type: 'TASK',
+                    title: subtask.title,
+                    description: subtask.description,
+                    customerName: customer.name,
+                    customerId: customer.id,
+                    phase: phaseDef.number,
+                    key: subtask.key,
+                })
+            }
+        }
+
+        // Check Deliverables
+        for (const devDef of phaseDef.deliverables) {
+            const existingDel = customer.deliverables.find(d => d.phaseNumber === phaseDef.number && d.deliverableKey === devDef.key)
+            if (!existingDel || existingDel.status !== 'COMPLETED') {
+                pendingItems.push({
+                    id: `del-${customer.id}-${phaseDef.number}-${devDef.key}`,
+                    type: 'DELIVERABLE',
+                    title: devDef.title,
+                    description: devDef.description,
+                    customerName: customer.name,
+                    customerId: customer.id,
+                    phase: phaseDef.number,
+                    key: devDef.key,
+                    hasDraft: existingDel?.status === 'DRAFT'
+                })
+            }
+        }
+    }
+
+    return pendingItems
+}
+
+// ─── Template Library ─────────────────────────────────────────────────────────
+
+export async function importUseCaseTemplate(customerId: string, templateId: string) {
+    const template = USE_CASE_TEMPLATES.find(t => t.id === templateId)
+    if (!template) throw new Error('Template not found')
+
+    await prisma.useCase.create({
+        data: {
+            customerId,
+            title: template.title,
+            description: template.description,
+            department: template.department,
+            priority: template.priority,
+            roiEstimate: template.roiEstimate,
+            status: 'DRAFT',
+            phase: 2
+        }
+    })
+
+    revalidatePath(`/customers/${customerId}`)
+    revalidatePath('/')
+}
+
+// ─── AI Intake ────────────────────────────────────────────────────────────────
+
+export async function processMeetingNotes(customerId: string, notes: string) {
+    return await analyzeMeetingNotes(notes)
+}
+
+export async function applyIntakeResults(customerId: string, data: IntakeResults) {
+    // 1. Save Assessment
+    await prisma.assessment.create({
+        data: {
+            customerId,
+            scoreStrategy: data.readinessScores.Strategy,
+            scoreData: data.readinessScores.Data,
+            scoreTech: data.readinessScores.Tech,
+            scoreSecurity: data.readinessScores.Security,
+            scoreSkills: data.readinessScores.Skills,
+            scoreOps: data.readinessScores.Ops,
+            scoreGovernance: data.readinessScores.Governance,
+            scoreFinancial: data.readinessScores.Financial,
+            status: 'COMPLETED',
+            completedAt: new Date()
+        }
+    })
+
+    // 2. Add Use Cases
+    for (const uc of data.useCases) {
+        await prisma.useCase.create({
+            data: {
+                customerId,
+                title: uc.title,
+                description: uc.description,
+                department: uc.department,
+                priority: uc.priority,
+                roiEstimate: uc.roiEstimate,
+                status: 'DRAFT',
+                phase: 2
+            }
+        })
+    }
+
+    // 3. Advance Phase if in Phase 1
+    const customer = await prisma.customer.findUnique({ where: { id: customerId } })
+    if (customer && customer.currentPhase === 1) {
+        await prisma.customer.update({
+            where: { id: customerId },
+            data: { currentPhase: 2 }
+        })
+    }
+
+    revalidatePath(`/customers/${customerId}`)
+    revalidatePath('/')
+}
+
+// ─── Export PPTX ──────────────────────────────────────────────────────────────
+
+export async function exportCustomerStrategyToPptx(customerId: string) {
+    const customer = await prisma.customer.findUnique({
+        where: { id: customerId },
+        include: {
+            assessments: { orderBy: { completedAt: 'desc' }, take: 1 },
+            useCases: { orderBy: { priority: 'desc' } }
+        }
+    })
+
+    if (!customer) throw new Error('Customer not found')
+
+    const pptxBuffer = await generateCustomerPptx({
+        customerName: customer.name,
+        industry: customer.industry || 'General Tech',
+        currentPhase: customer.currentPhase,
+        assessment: customer.assessments[0] || null,
+        useCases: customer.useCases
+    })
+
+    // Return as base64 string for client-side download
+    return pptxBuffer.toString('base64')
+}
+

@@ -127,26 +127,33 @@ export default function NewAssessmentPage({ params }: { params: Promise<{ id: st
                                         </span>
                                     </div>
 
-                                    <div className="grid grid-cols-5 gap-3 max-w-2xl">
-                                        {[1, 2, 3, 4, 5].map((score) => {
+                                    <div className="grid grid-cols-1 gap-3 max-w-3xl">
+                                        {[1, 2, 4, 5].map((score) => {
                                             const isSelected = scores[q.id] === score
                                             const guideText = q.scoringGuide?.[score]
+                                            
+                                            if (!guideText) return null;
+
                                             return (
                                                 <button
                                                     key={score}
                                                     onClick={() => handleScoreChange(q.id, score)}
-                                                    className={`group relative flex flex-col items-center gap-2 p-3 rounded-xl transition-all border
+                                                    className={`group relative flex items-start text-left gap-4 p-4 rounded-xl transition-all border
                                                         ${isSelected
-                                                            ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg ring-4 ring-indigo-50 transform scale-105 z-10'
-                                                            : 'bg-white border-slate-200 text-slate-400 hover:border-indigo-300 hover:bg-slate-50'}
+                                                            ? 'bg-indigo-50 border-indigo-600 shadow-md ring-1 ring-indigo-600 z-10'
+                                                            : 'bg-white border-slate-200 hover:border-indigo-300 hover:bg-slate-50'}
                                                     `}
                                                 >
-                                                    <span className={`text-2xl font-black ${isSelected ? 'text-white' : 'text-slate-900 group-hover:text-indigo-600'}`}>{score}</span>
-                                                    {guideText && (
-                                                        <span className={`text-[11px] leading-snug font-semibold text-center mt-1 transition-colors ${isSelected ? 'text-white' : 'text-slate-600 group-hover:text-slate-900'}`}>
+                                                    <div className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors
+                                                        ${isSelected ? 'border-indigo-600 bg-indigo-600' : 'border-slate-300 group-hover:border-indigo-400'}
+                                                    `}>
+                                                        {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <span className={`text-[14px] leading-relaxed font-medium transition-colors ${isSelected ? 'text-indigo-900' : 'text-slate-700 group-hover:text-slate-900'}`}>
                                                             {guideText}
                                                         </span>
-                                                    )}
+                                                    </div>
                                                 </button>
                                             )
                                         })}

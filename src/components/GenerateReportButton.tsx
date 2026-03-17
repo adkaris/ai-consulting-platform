@@ -2,17 +2,19 @@
 
 import { useState } from 'react'
 import { Sparkles } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { generateDeliverable } from '@/app/actions'
 
 export default function GenerateReportButton({ customerId }: { customerId: string }) {
+    const router = useRouter()
     const [generating, setGenerating] = useState(false)
 
     const handleGenerate = async () => {
         setGenerating(true)
         try {
             await generateDeliverable(customerId, 1, 'readiness_report')
-            // Optionally redirect or show success
-            alert('Intelligence Report generated successfully. You can find it in the Phase 1 Deliverables.')
+            router.refresh()
+            router.push(`/customers/${customerId}/report`)
         } catch (error) {
             console.error(error)
             alert('Failed to generate report.')

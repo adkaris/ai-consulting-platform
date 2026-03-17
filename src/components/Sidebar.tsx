@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, FileText, CheckCircle, Settings, BarChart2 } from 'lucide-react'
+import { LayoutDashboard, Users, FileText, CheckCircle, Settings, BarChart2, CheckSquare } from 'lucide-react'
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 
@@ -12,6 +12,7 @@ function cn(...inputs: ClassValue[]) {
 
 const navigation = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+    { name: 'Action Plan', href: '/action-plan', icon: CheckSquare },
     { name: 'Customers', href: '/customers', icon: Users },
     { name: 'Assessments', href: '/assessments', icon: CheckCircle },
     { name: 'Use Cases', href: '/use-cases', icon: FileText },

@@ -4,13 +4,15 @@ import { useState } from 'react'
 import JourneyNavigator from './JourneyNavigator'
 import {
     Building2, Plus, Calendar, Activity, Zap, ArrowRight, Gauge, ShieldAlert, Sparkles,
-    Rocket, Users, BarChart3, CheckSquare, Target, Clock, TrendingUp, Handshake, BookOpen, ListTodo, ChevronRight
+    Rocket, Users, BarChart3, CheckSquare, Target, Clock, TrendingUp, Handshake, BookOpen, ListTodo, ChevronRight, BrainCircuit
 } from 'lucide-react'
 import Link from 'next/link'
 import UseCaseModal from './UseCaseModal'
+import UseCaseTemplateModal from './UseCaseTemplateModal'
 import { generateRecommendations } from '@/lib/ai-advisor'
 import { generateDeliverable } from '@/app/actions'
 import { METHODOLOGY, getPhase } from '@/lib/methodology'
+import { useRouter } from 'next/navigation'
 import PhaseSubtaskList from './PhaseSubtaskList'
 import DeliverablePanel from './DeliverablePanel'
 import PhaseDocuments from './PhaseDocuments'
@@ -57,6 +59,7 @@ interface ProfileWorkflowProps {
 }
 
 export default function ProfileWorkflow({ customer, phaseData }: ProfileWorkflowProps) {
+    const router = useRouter()
     const [selectedPhase, setSelectedPhase] = useState(customer.currentPhase || 1)
     const [generating, setGenerating] = useState(false)
 
@@ -64,7 +67,10 @@ export default function ProfileWorkflow({ customer, phaseData }: ProfileWorkflow
         setGenerating(true)
         try {
             await generateDeliverable(customer.id, phase, key)
-            // Scroll to deliverables if possible or just show success
+            router.refresh()
+            if (key === 'readiness_report') {
+                router.push(`/customers/${customer.id}/report`)
+            }
         } catch (error) {
             console.error('Failed to generate deliverable:', error)
             alert('Error generating document.')
@@ -172,9 +178,14 @@ export default function ProfileWorkflow({ customer, phaseData }: ProfileWorkflow
                                             <Gauge className="w-4 h-4 mr-1.5 text-indigo-600" />
                                             Last completed: {new Date(customer.assessments[0].completedAt || '').toLocaleDateString()}
                                         </div>
-                                        <Link href={`/customers/${customer.id}/assessment/new`} className="text-sm font-bold text-indigo-600 hover:text-indigo-700 transition-colors flex items-center gap-1 group">
-                                            Run Diagnostic <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                                        </Link>
+                                        <div className="flex items-center gap-4">
+                                            <Link href={`/customers/${customer.id}/intake`} className="text-sm font-bold text-indigo-400 hover:text-indigo-600 transition-colors flex items-center gap-1 group">
+                                                <BrainCircuit className="w-4 h-4" /> Use AI Intake
+                                            </Link>
+                                            <Link href={`/customers/${customer.id}/assessment/new`} className="text-sm font-bold text-indigo-600 hover:text-indigo-700 transition-colors flex items-center gap-1 group">
+                                                Run Diagnostic <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                            </Link>
+                                        </div>
                                     </div>
                                 </div>
                             ) : (
@@ -268,7 +279,10 @@ export default function ProfileWorkflow({ customer, phaseData }: ProfileWorkflow
                                         <p className="text-xl font-black text-emerald-600">${customer.useCases.reduce((acc: any, curr: any) => acc + (curr.roiEstimate || 0), 0).toLocaleString()}</p>
                                     </div>
                                 </div>
-                                <UseCaseModal customerId={customer.id} />
+                                <div className="flex items-center gap-3">
+                                    <UseCaseTemplateModal customerId={customer.id} />
+                                    <UseCaseModal customerId={customer.id} />
+                                </div>
                             </div>
 
                             {customer.useCases.length > 0 ? (
