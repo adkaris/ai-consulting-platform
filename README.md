@@ -37,19 +37,20 @@ A modern, comprehensive Next.js web application for tracking and managing AI con
     npm install
     ```
 
-3.  **Setup the Database**
-    This project uses an embedded SQLite database (`dev.db`). Initialize the schema using Prisma:
+3.  **Set up the Database — choose one option:**
+
+    **Option A — Demo snapshot (recommended):** Use the pre-built database with 8 demo companies, assessments, use cases, and roadmap data ready to go:
+    ```bash
+    cp demo.db dev.db
+    ```
+
+    **Option B — Fresh database:** Start with an empty schema and optionally seed it:
     ```bash
     npx prisma db push
+    npx tsx prisma/seed.ts   # populates 8 demo companies
     ```
 
-4.  **Seed the Database (Optional but Recommended)**
-    Populate the application with synthetic companies, 24 use cases, and backfilled historical readiness assessments:
-    ```bash
-    npm run seed
-    ```
-
-5.  **Start the Development Server**
+4.  **Start the Development Server**
     ```bash
     npm run dev
     ```
