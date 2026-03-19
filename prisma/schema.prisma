@@ -20,11 +20,12 @@ model Customer {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
-  assessments    Assessment[]
-  useCases       UseCase[]
-  phaseTasks     PhaseTask[]
-  deliverables   Deliverable[]
-  documents      Document[]
+  assessments       Assessment[]
+  useCases          UseCase[]
+  phaseTasks        PhaseTask[]
+  deliverables      Deliverable[]
+  documents         Document[]
+  changeItems       ChangeManagementItem[]
 }
 
 model Assessment {
@@ -49,23 +50,48 @@ model Assessment {
 }
 
 model UseCase {
-  id                  String    @id @default(cuid())
+  id                  String        @id @default(cuid())
   customerId          String
-  customer            Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customer            Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
   title               String
   description         String?
   department          String?
 
   expectedBenefits    String?
-  roiEstimate         Float?    // Financial or time ROI
+  roiEstimate         Float?    // Kept for backward-compat sorting (sum of MONEY rois)
   priority            String?   // HIGH, MEDIUM, LOW
+  complexity          Int?      // 1 (simple) to 10 (complex)
+  value               Int?      // 1 (low) to 10 (high)
 
-  phase               Int       @default(2)
-  status              String    @default("DRAFT") // APPROVED, PILOTING, PRODUCTION
+  // PoV fields (Phase 3)
+  povTimeframe        String?   // e.g. "8 weeks"
+  povSuccessCriteria  String?   // free text
+  povNotes            String?
 
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  // Value Realization (Phase 5)
+  realizedValue       Float?    // actual captured value to date
+
+  phase               Int           @default(2)
+  status              String        @default("DRAFT") // APPROVED, PILOTING, PRODUCTION
+
+  rois                UseCaseROI[]
+
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+}
+
+model UseCaseROI {
+  id          String   @id @default(cuid())
+  useCaseId   String
+  useCase     UseCase  @relation(fields: [useCaseId], references: [id], onDelete: Cascade)
+
+  type        String   // MONEY | PERFORMANCE | TIME
+  value       Float
+  unit        String   // "€", "%", "hrs/week", "hrs/month", "days/year", "mins/day"
+  description String?
+
+  createdAt   DateTime @default(now())
 }
 
 model PhaseTask {
@@ -111,4 +137,43 @@ model Document {
   filePath    String   // relative path under /uploads/
   category    String   @default("OTHER") // CUSTOMER_DOC | DELIVERABLE | MEETING_NOTES | OTHER
   uploadedAt  DateTime @default(now())
+}
+
+model ChangeManagementItem {
+  id          String   @id @default(cuid())
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  category    String   // STAKEHOLDER | LITERACY | RESKILLING | GOVERNANCE | CUSTOM
+  title       String
+  description String?
+  status      String   @default("NOT_STARTED") // NOT_STARTED | IN_PROGRESS | COMPLETED | AT_RISK
+  owner       String?
+  dueDate     String?  // stored as string for flexibility (e.g. "Q3 2025")
+  notes       String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AssessmentDomain {
+  id           String               @id @default(cuid())
+  name         String
+  description  String?
+  weight       Float                @default(1.0)
+  questions    AssessmentQuestion[]
+  
+  @@unique([name])
+}
+
+model AssessmentQuestion {
+  id           String           @id @default(cuid())
+  domainId     String
+  domain       AssessmentDomain @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  text         String
+  weight       String           @default("Standard") // Critical | High | Standard
+  scoringGuide String           @default("{}")      // JSON string mapping score to description
+  
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
 }

@@ -16,7 +16,8 @@ export default async function CustomerProfile({ params }: { params: Promise<{ id
             where: { id },
             include: {
                 assessments: { orderBy: { completedAt: 'desc' } },
-                useCases: { orderBy: { createdAt: 'desc' } },
+                useCases: { orderBy: { createdAt: 'desc' }, include: { rois: true } },
+                changeItems: { orderBy: { createdAt: 'asc' } },
             }
         }),
         getCustomerPhaseData(id),

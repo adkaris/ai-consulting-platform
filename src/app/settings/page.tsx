@@ -1,14 +1,17 @@
 import { getCustomers, getAllAssessments, getAllUseCases } from '@/app/actions'
+import { getAssessmentSchema } from '@/app/assessment-actions'
+import MethodologyEditor from '@/components/MethodologyEditor'
 import {
     Settings, Database, Layers, ShieldCheck, BookOpen,
     GitBranch, Users, Activity, FileText, CheckCircle
 } from 'lucide-react'
 
 export default async function SettingsPage() {
-    const [customers, assessments, useCases] = await Promise.all([
+    const [customers, assessments, useCases, assessmentSchema] = await Promise.all([
         getCustomers(),
         getAllAssessments(),
         getAllUseCases(),
+        getAssessmentSchema(),
     ])
 
     const dbStats = [
@@ -112,40 +115,14 @@ export default async function SettingsPage() {
                 </div>
             </section>
 
-            {/* Assessment Domains Reference */}
+            {/* Assessment Domains Reference & Editor */}
             <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="px-8 py-5 border-b border-slate-100 flex items-center gap-3">
                     <Layers className="w-5 h-5 text-indigo-600" />
-                    <h2 className="text-base font-bold text-slate-900">8-Domain Maturity Framework</h2>
+                    <h2 className="text-base font-bold text-slate-900">Maturity Assessment Methodology</h2>
                 </div>
-                <div className="p-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {[
-                        { domain: 'AI Strategy & Vision', weight: '1.5×', critical: true },
-                        { domain: 'Data Readiness & Governance', weight: '2.0×', critical: true },
-                        { domain: 'Technology & Infrastructure', weight: '1.5×', critical: false },
-                        { domain: 'Security & Compliance', weight: '1.5×', critical: true },
-                        { domain: 'AI Skills & Talent', weight: '1.5×', critical: false },
-                        { domain: 'Organisational Readiness', weight: '1.5×', critical: true },
-                        { domain: 'AI Governance & Ethics', weight: '1.0×', critical: true },
-                        { domain: 'Financial & Operational Readiness', weight: '1.0×', critical: false },
-                    ].map((d, i) => (
-                        <div key={d.domain} className="flex items-center justify-between p-4 rounded-xl border border-slate-100 bg-slate-50/30">
-                            <div className="flex items-center gap-3">
-                                <span className="text-[11px] font-black text-slate-400 w-5">{i + 1}</span>
-                                <p className="text-sm font-semibold text-slate-800">{d.domain}</p>
-                            </div>
-                            <div className="flex items-center gap-2 shrink-0">
-                                {d.critical && (
-                                    <span className="text-[9px] font-black uppercase tracking-widest text-rose-500 border border-rose-100 bg-rose-50 px-1.5 py-0.5 rounded">
-                                        Critical
-                                    </span>
-                                )}
-                                <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded">
-                                    {d.weight}
-                                </span>
-                            </div>
-                        </div>
-                    ))}
+                <div className="p-8">
+                    <MethodologyEditor initialDomains={assessmentSchema as any} />
                 </div>
             </section>
 

@@ -1,5 +1,5 @@
 import { getAllUseCases } from '@/app/actions'
-import { Briefcase, Zap, DollarSign, Building2 } from 'lucide-react'
+import { Briefcase, Zap, Euro, Building2 } from 'lucide-react'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import SearchInput from '@/components/SearchInput'
@@ -28,8 +28,11 @@ export default async function UseCasesPage({
     }
 
     // Sort
+    const moneyROI = (uc: (typeof allUseCases)[0]) =>
+        (uc.rois ?? []).filter(r => r.type === 'MONEY').reduce((s, r) => s + r.value, 0)
+
     if (sort === 'roi') {
-        useCases = [...useCases].sort((a, b) => (b.roiEstimate ?? 0) - (a.roiEstimate ?? 0))
+        useCases = [...useCases].sort((a, b) => moneyROI(b) - moneyROI(a))
     } else if (sort === 'priority') {
         const order = { HIGH: 0, MEDIUM: 1, LOW: 2 }
         useCases = [...useCases].sort((a, b) =>
@@ -38,7 +41,8 @@ export default async function UseCasesPage({
     }
     // default 'date': already ordered by createdAt desc from the action
 
-    const totalROI = allUseCases.reduce((sum, uc) => sum + (uc.roiEstimate || 0), 0)
+    const totalROI = allUseCases.reduce((sum, uc) =>
+        sum + (uc.rois ?? []).filter(r => r.type === 'MONEY').reduce((s, r) => s + r.value, 0), 0)
     const highPriorityCount = allUseCases.filter(uc => uc.priority === 'HIGH').length
 
     return (
@@ -52,7 +56,7 @@ export default async function UseCasesPage({
                 <div className="flex items-center gap-4">
                     <div className="px-4 py-2 bg-emerald-50 rounded-xl border border-emerald-100">
                         <p className="text-[10px] uppercase tracking-wider font-bold text-emerald-600">Total Est. ROI</p>
-                        <p className="text-lg font-bold text-emerald-700">${totalROI.toLocaleString()}</p>
+                        <p className="text-lg font-bold text-emerald-700">€{totalROI.toLocaleString()}</p>
                     </div>
                     <div className="px-4 py-2 bg-rose-50 rounded-xl border border-rose-100">
                         <p className="text-[10px] uppercase tracking-wider font-bold text-rose-600">High Priority</p>
@@ -121,10 +125,26 @@ export default async function UseCasesPage({
                                             </span>
                                         </td>
                                         <td className="px-6 py-5">
-                                            <p className="text-sm font-bold text-slate-900 flex items-center">
-                                                <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
-                                                {uc.roiEstimate ? uc.roiEstimate.toLocaleString() : 'TBD'}
-                                            </p>
+                                            {uc.rois && uc.rois.length > 0 ? (
+                                                <div className="flex flex-col gap-1">
+                                                    {uc.rois.map((roi) => (
+                                                        <span key={roi.id} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold w-fit ${
+                                                            roi.type === 'MONEY'       ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
+                                                            roi.type === 'PERFORMANCE' ? 'bg-sky-50 text-sky-700 border border-sky-100' :
+                                                                                         'bg-violet-50 text-violet-700 border border-violet-100'
+                                                        }`}>
+                                                            {roi.type === 'MONEY'       ? <Euro className="w-3 h-3" /> :
+                                                             roi.type === 'PERFORMANCE' ? <span className="text-[9px]">%</span> :
+                                                                                          <span className="text-[9px]">⏱</span>}
+                                                            {roi.type === 'MONEY'       ? `€${Number(roi.value).toLocaleString()}` :
+                                                             roi.type === 'PERFORMANCE' ? `+${roi.value}%` :
+                                                                                          `${roi.value} ${roi.unit}`}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <span className="text-xs text-slate-400 font-semibold">TBD</span>
+                                            )}
                                         </td>
                                         <td className="px-6 py-5">
                                             <div className="flex items-center gap-2">

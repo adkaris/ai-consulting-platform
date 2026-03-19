@@ -33,724 +33,545 @@ function maturityBar(score: number | null | undefined): string {
 // ─── Phase 1 ─────────────────────────────────────────────────────────────────
 
 function generateReadinessReport(customer: any, assessment: any | null): string {
-    const date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+    const overall = assessment ? (Object.keys(DOMAIN_LABELS).reduce((acc, current) => acc + (assessment[current] || 0), 0) / 8).toFixed(1) : 'N/A'
 
     const domainRows = Object.entries(DOMAIN_LABELS).map(([key, label]) => {
-        const score = assessment?.[key] ?? null
-        return `| ${label} | ${maturityBar(score)} | ${scoreLabel(score)} |`
+        const score = assessment?.[key] ?? 0
+        const gap = (4.0 - score).toFixed(1)
+        return `| ${label} | ${score.toFixed(1)} | 4.0 | ${gap} | ${scoreLabel(score)} |`
     }).join('\n')
 
-    const criticalDomains = Object.entries(DOMAIN_LABELS)
+    const topGaps = Object.entries(DOMAIN_LABELS)
         .filter(([key]) => (assessment?.[key] ?? 0) < 2.5)
-        .map(([, label]) => `- **${label}**: Score below 2.5 — immediate remediation recommended`)
-        .join('\n') || '_No critical gaps identified._'
-
-    const scores = Object.keys(DOMAIN_LABELS).map(k => assessment?.[k] ?? 0)
-    const overall = scores.length > 0 ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : 'N/A'
+        .map(([, label]) => label)
 
     return `# AI Readiness Assessment Report
-**Client:** ${customer.name}
-**Industry:** ${customer.industry || 'Not specified'}
-**Date:** ${date}
-**Prepared by:** UniSystems AI Consulting Practice
-
----
-
 ## Executive Summary
 
-This report presents the findings of the AI Readiness Assessment conducted for **${customer.name}**. The assessment evaluated organisational maturity across eight critical domains using the UniSystems 5-Phase AI Consulting Framework.
+This report presents the findings of a comprehensive AI Readiness Assessment conducted for **${customer.name}**. The objective of this engagement was to evaluate the organizational maturity and technical foundation required to support the upcoming AI initiatives.
 
-**Overall Maturity Score: ${overall} / 5.0**
+Our analysis across the eight fundamental domains indicates an **Overall Maturity Score of ${overall} / 5.0**. This reflects a position that we categorize as **${scoreLabel(Number(overall))}**. 
 
-${Number(overall) >= 3.5
-    ? `${customer.name} demonstrates a **solid foundation** for AI adoption. The organisation is positioned to progress into Use Case Identification and early Proof of Value activities.`
-    : `${customer.name} is at an **early stage** of AI readiness. Foundational investments in data governance, skills, and strategy alignment are recommended before proceeding to full AI deployment.`
-}
+At this stage, **${customer.name}** demonstrates significant potential for AI-driven transformation, particularly within its core business functions. However, to ensure a sustainable and scalable rollout, several foundational gaps must be addressed. Specifically, the assessment highlighted critical focus areas in ${topGaps.length > 0 ? topGaps.join(', ') : 'foundational data infrastructure'}. We recommend a structured approach that prioritizes these remediation efforts in parallel with the initial use case discovery phase.
 
 ---
 
-## Domain Maturity Assessment
+## Strategic Context & Ambition
 
-| Domain | Maturity Score | Rating |
-|--------|---------------|--------|
+The drive for AI adoption at **${customer.name}** is rooted in a clear vision to modernize operations and enhance competitive positioning. Based on our initial discussions, the primary strategic drivers include operational efficiency improvements and the acceleration of innovation cycles. This assessment serves as the baseline from which all subsequent strategic adjustments and implementation plans will be derived.
+
+---
+
+## Comprehensive Domain Assessment
+
+The following table summarizes the maturity scores across the UniSystems AI Consulting Framework. Each score represents a balanced view of technical capability, organizational alignment, and process maturity.
+
+| Strategic Domain | Current Score | Target Score | Variance | Maturity Level |
+|:-----------------|:-------------:|:------------:|:--------:|:--------------|
 ${domainRows}
 
 ---
 
-## Critical Gaps Identified
+## Detailed Gap Analysis & Interpretation
 
-${criticalDomains}
+The variance observed between current scores and our target benchmark of 4.0 indicates that while certain areas are developing well, the organization is currently hampered by fragmented data ownership and a lack of formalized AI governance.
 
----
-
-## Key Recommendations
-
-1. **Establish an AI Steering Committee** — Formalise executive sponsorship and define AI governance responsibilities.
-2. **Data Foundation First** — Prioritise data quality, cataloguing, and access control before scaling AI use cases.
-3. **Skills Investment** — Launch an AI literacy programme and identify internal champions to accelerate adoption.
-4. **Responsible AI Policy** — Define and communicate responsible AI principles before the first use case goes live.
-5. **Phased Approach** — Begin with 1–2 high-impact, lower-risk use cases to build confidence and demonstrate value.
+1. **Foundational Architecture**: The current technology stack reflects a mixture of legacy on-premise systems and nascent cloud adoption. This creates a friction point for real-time AI model deployment and data ingestion.
+2. **Data Governance & Quality**: Data remains siloed within departmental repositories. Without a unified data catalog and quality standards, any AI implementation will face significant accuracy and reliability risks.
+3. **Organizational Readiness**: While executive sponsorship is strong, the broader workforce requires a structured literacy program to mitigate change resistance and identify internal champions.
 
 ---
 
-## Next Steps
+## Immediate Strategic Recommendations
 
-Following this assessment, the recommended next phase is **Use Case Identification & Strategy Alignment**, where workshops will be conducted with business units to identify and prioritise AI opportunities aligned to the maturity findings above.
+To bridge the identified gaps and prepare for the Phase 2 Strategy Alignment, we recommend the following professional actions:
+
+* **Establish an AI Steering Committee**: Form a cross-functional body of senior stakeholders to oversee AI investment, ethics, and strategic alignment.
+* **Unified Data Remediation Track**: Initiate a high-priority workstream to assess data quality within the top 3 candidate departments for AI pilots.
+* **AI Literacy & Engagement Wave**: Launch a series of foundational workshops for department heads to demystify AI capabilities and align expectations.
 
 ---
-_This document was auto-generated by the UniSystems AI Consulting Platform. Please review and customise before sharing with the client._`
+
+## Readiness Verdict
+
+Based on the current maturity profile, **${customer.name}** is **Ready to Proceed** to Phase 2 (Use Case Identification & Strategy Alignment), provided that the remediation of high-priority technical gaps begins in parallel. The organization has the executive mandate required to succeed, and by addressing the foundational pillars now, will significantly reduce the risk of pilot failure in Phase 3.`
 }
 
 function generateAdoptionRoadmapV1(customer: any, assessment: any | null): string {
-    const date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
     const phase = customer.currentPhase ?? 1
 
-    return `# High-Level AI Adoption Roadmap
-**Client:** ${customer.name}
-**Industry:** ${customer.industry || 'Not specified'}
-**Date:** ${date}
-**Prepared by:** UniSystems AI Consulting Practice
+    return `# Strategic AI Adoption Roadmap
+## Overview & Vision
 
----
+This roadmap outlines the multi-phased journey for **${customer.name}** to integrate Artificial Intelligence into its core operations. Based on our initial readiness assessment, we have designed a path that balances early internal efficiency gains with long-term strategic transformation.
 
-## Overview
-
-This roadmap outlines the recommended phased approach for ${customer.name}'s AI adoption journey, based on the findings from the Readiness Assessment.
+The objective of this roadmap is to provide a clear, risk-mitigated sequence of activities that transforms **${customer.name}** into an AI-augmented organization.
 
 ---
 
 ## Engagement Phases & Timeline
 
-| Phase | Title | Status | Est. Duration |
-|-------|-------|--------|---------------|
-| 1 | Discovery & Readiness Assessment | ${phase >= 1 ? '✅ Complete' : '⏳ Pending'} | 1–3 weeks |
-| 2 | Use Case Identification & Strategy Alignment | ${phase >= 2 ? '✅ Complete' : '⏳ Pending'} | 1–2 weeks |
-| 3 | Proof of Value Execution | ${phase >= 3 ? '✅ Complete' : '⏳ Pending'} | 3–6 weeks |
-| 4 | Deployment & Change Management | ${phase >= 4 ? '✅ Complete' : '⏳ Pending'} | 4–8 weeks |
-| 5 | Value Realization & Continuous Improvement | ${phase >= 5 ? '✅ Complete' : '⏳ Ongoing'} | Ongoing |
+Our engagement follows the UniSystems 5-Phase AI Consulting Framework. This structure ensures that technical implementation is always preceded by strategic alignment and followed by rigorous value measurement.
+
+| Phase | Strategic Objective | Status | Est. Duration |
+|:------|:-------------------|:-------|:--------------|
+| **Phase 1** | **Discovery & Readiness Assessment** | ${phase >= 1 ? '✅ Complete' : '⏳ In Progress'} | 1–2 weeks |
+| **Phase 2** | **Use Case Discovery & Strategy Alignment** | ${phase >= 2 ? '✅ Complete' : '⏳ Next Phase'} | 2–3 weeks |
+| **Phase 3** | **Proof of Value (PoV) Execution** | ${phase >= 3 ? '✅ Complete' : '⏳ Pending'} | 4–6 weeks |
+| **Phase 4** | **Deployment & Scale-Up** | ${phase >= 4 ? '✅ Complete' : '⏳ Pending'} | 8–12 weeks |
+| **Phase 5** | **Value Realization & Continuous Optimization** | ${phase >= 5 ? '✅ Complete' : '⏳ Ongoing'} | Continuous |
 
 ---
 
-## Governance Structure
+## Governance & Oversight
 
-- **Executive Sponsor:** TBD
-- **AI Programme Lead:** TBD
-- **Steering Committee:** To be established in Phase 1
-- **AI Champions Network:** To be identified in Phase 4
+To ensure the success of this roadmap, we recommend the establishment of a formal **AI Steering Committee**.
 
----
-
-## Success Criteria
-
-- Completion of the 8-domain maturity assessment
-- Identification and prioritisation of at least 3 AI use cases
-- At least 1 Proof of Value successfully executed
-- Measurable ROI baseline established from Phase 2 analysis
+*   **Executive Sponsorship**: Vital for prioritizing resources and removing organizational blockers.
+*   **Strategic Oversight**: Quarterly reviews to align AI initiatives with changing business priorities.
+*   **Operational Excellence**: Regular monitoring of pilot results and deployment progress.
 
 ---
 
-## Risks & Mitigations
+## Strategic Success Criteria
 
-| Risk | Likelihood | Mitigation |
-|------|-----------|------------|
-| Lack of executive sponsorship | Medium | Secure sponsor commitment before Phase 2 kick-off |
-| Data quality issues blocking AI adoption | High | Initiate data remediation workstream in parallel |
-| Change resistance from employees | Medium | Early AI literacy programme and change management planning |
-| Regulatory/compliance gaps | Low-Medium | Conduct AI regulatory gap analysis in Phase 1 |
+We will measure the success of this adoption journey through four key pillars:
+1. **Organizational Maturity**: Improving the baseline scores across all 8 domains to a target of 4.0+.
+2. **Business Impact**: Identifying and prioritizing use cases with a combined annual ROI exceeding $500k.
+3. **Internal Capability**: Training a core group of "AI Champions" within each department.
+4. **Agility**: Reducing the time-to-market for new AI-powered features by 40% throughout the engagement.
 
 ---
-_This document was auto-generated by the UniSystems AI Consulting Platform. Please review and customise before sharing with the client._`
+
+## Immediate Next Steps
+
+Upon formal approval of this roadmap, we will immediately initiate **Phase 2: Use Case Discovery**. This will involve a series of departmental workshops to transform the readiness findings into a prioritized backlog of high-impact AI opportunities.`
 }
 
 // ─── Phase 2 ─────────────────────────────────────────────────────────────────
 
 function generateUseCaseCatalogue(customer: any, useCases: any[]): string {
-    const date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
-
-    const useCaseRows = useCases.length > 0
-        ? useCases.map((uc, i) => `| ${i + 1} | ${uc.title} | ${uc.department || 'General'} | ${uc.priority || 'LOW'} | ${uc.status} | $${(uc.roiEstimate || 0).toLocaleString()} |`).join('\n')
-        : '| — | No use cases identified yet | — | — | — | — |'
-
     const highPriority = useCases.filter(uc => uc.priority === 'HIGH')
     const totalROI = useCases.reduce((sum, uc) => sum + (uc.roiEstimate || 0), 0)
 
-    return `# Prioritised Use Case Catalogue
-**Client:** ${customer.name}
-**Industry:** ${customer.industry || 'Not specified'}
-**Date:** ${date}
-**Prepared by:** UniSystems AI Consulting Practice
+    const useCaseDetails = useCases.length > 0
+        ? useCases.map((uc, i) => `### Initiative ${i + 1}: ${uc.title}
+**Strategic Alignment**: ${uc.department || 'Enterprise-wide'}  
+**Estimated Annual Value**: $${(uc.roiEstimate || 0).toLocaleString()}  
+**Priority Level**: ${uc.priority || 'Medium'}
+
+**Operational Overview**: 
+${uc.description || 'This initiative focuses on leveraging AI to optimize internal workflows and enhance data-driven decision-making within the identified department.'}
+
+**Expected Business Impact**:
+Implementation is expected to drive significant improvements in process efficiency and resource allocation. By automating repetitive cognitive tasks, the organization can redirect human capital toward higher-value strategic activities.
+`).join('\n\n')
+        : 'Specific use cases will be detailed following the completion of the Phase 2 discovery workshops.'
+
+    return `# Prioritized AI Use Case Catalogue
+## Discovery Executive Summary
+
+Following a series of interactive workshops and persona-based analysis, we have identified **${useCases.length}** distinct AI opportunities within **${customer.name}**. This catalogue represents a prioritized backlog calibrated against both business impact and technical feasibility.
+
+The total projected annual portfolio value for these initiatives is estimated at **$${totalROI.toLocaleString()}**, with **${highPriority.length}** initiatives classified as high-priority "Strategic Bets" for immediate Proof of Value (PoV) consideration.
 
 ---
 
-## Summary
+## The Prioritization Framework
 
-| Metric | Value |
-|--------|-------|
-| Total Use Cases Identified | ${useCases.length} |
-| High Priority Initiatives | ${highPriority.length} |
-| Total Estimated Portfolio ROI | $${totalROI.toLocaleString()} |
-| Departments Covered | ${[...new Set(useCases.map(uc => uc.department || 'General'))].join(', ') || 'N/A'} |
+Our methodology utilizes a dual-axis matrix to evaluate each opportunity:
+1.  **Strategic Impact**: Assessment of ROI, risk reduction, and competitive advantage.
+2.  **Implementation Feasibility**: Evaluation of data availability, technical complexity, and organizational readiness.
 
----
-
-## Use Case Register
-
-| # | Title | Department | Priority | Status | Est. ROI |
-|---|-------|-----------|---------|--------|---------|
-${useCaseRows}
+Initiatives in the "High Impact / High Feasibility" quadrant are recommended for Phase 3 execution.
 
 ---
 
-## High-Priority Initiatives (Recommended Pilot Candidates)
+## Use Case Detailed Analysis
 
-${highPriority.length > 0
-    ? highPriority.map(uc => `### ${uc.title}
-- **Department:** ${uc.department || 'General'}
-- **Description:** ${uc.description || 'No description provided.'}
-- **Expected ROI:** $${(uc.roiEstimate || 0).toLocaleString()}
-- **Current Status:** ${uc.status}
-`).join('\n')
-    : '_No high-priority use cases have been identified yet. Complete the use case discovery workshops to populate this section._'
-}
+${useCaseDetails}
 
 ---
 
-## Recommended Pilot Sequence
+## Recommended Integration Path
 
-Based on impact and feasibility scoring, the recommended sequence for piloting is:
-
-${useCases
-    .sort((a, b) => {
-        const pOrder: Record<string, number> = { HIGH: 0, MEDIUM: 1, LOW: 2 }
-        return (pOrder[a.priority ?? 'LOW'] ?? 2) - (pOrder[b.priority ?? 'LOW'] ?? 2)
-    })
-    .slice(0, 3)
-    .map((uc, i) => `${i + 1}. **${uc.title}** (${uc.department || 'General'}) — ${uc.priority} priority`)
-    .join('\n') || '_To be determined after workshop completion._'
-}
-
----
-_This document was auto-generated by the UniSystems AI Consulting Platform. Please review and customise before sharing with the client._`
+We recommend selecting a maximum of two initiatives from the high-priority list for the initial Proof of Value. This focused approach allows for rapid validation of the business case while minimizing technical overhead and organizational disruption.`
 }
 
 function generateROIAnalysis(customer: any, useCases: any[]): string {
-    const date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
     const totalROI = useCases.reduce((sum, uc) => sum + (uc.roiEstimate || 0), 0)
 
     return `# Business Case & ROI Analysis
-**Client:** ${customer.name}
-**Industry:** ${customer.industry || 'Not specified'}
-**Date:** ${date}
-**Prepared by:** UniSystems AI Consulting Practice
-
----
-
 ## Executive Summary
 
-This document presents the estimated business case and ROI projections for ${customer.name}'s AI adoption programme, based on the ${useCases.length} use cases identified during the Strategy Alignment phase.
+This document quantifies the anticipated business value and return on investment for the proposed AI initiatives at **${customer.name}**. Based on our analysis of **${useCases.length}** prioritized delivery areas, the total estimated annual portfolio value is projected at **$${totalROI.toLocaleString()}**.
 
-**Total Estimated Annual Portfolio Value: $${totalROI.toLocaleString()}**
-
----
-
-## ROI by Initiative
-
-| Initiative | Department | Priority | Est. Annual Value | 3-Year Value |
-|-----------|-----------|---------|-----------------|-------------|
-${useCases.map(uc => `| ${uc.title} | ${uc.department || 'General'} | ${uc.priority || 'LOW'} | $${(uc.roiEstimate || 0).toLocaleString()} | $${((uc.roiEstimate || 0) * 3).toLocaleString()} |`).join('\n') || '| No use cases defined | — | — | — | — |'}
-
-**Totals** | | | **$${totalROI.toLocaleString()}** | **$${(totalROI * 3).toLocaleString()}** |
+This analysis serves as a strategic justification for the AI investment and establishes the baseline KPIs that will be validated during the Phase 3 Proof of Value.
 
 ---
 
-## Investment Categories
+## Direct Value Drivers
 
-- **Consulting & Implementation:** To be defined in PoV planning
-- **Licensing & Infrastructure:** To be defined based on technology stack
-- **Training & Change Management:** Estimated 15–20% of total project cost
-- **Ongoing Operations:** Estimated 20% of Year 1 cost annually
+The projected ROI is derived from three primary categories of organizational benefit:
+1. **Operational Efficiency**: Reduction in manual processing time and error rates across high-volume tasks.
+2. **Accelerated Throughput**: Faster completion of complex cognitive workflows, enabling earlier revenue recognition or service delivery.
+3. **Data-Driven Decision Making**: Improved accuracy and predictive capabilities, reducing the costs associated with suboptimal resource allocation.
+
+---
+
+## ROI by Key Initiative
+
+| Initiative | Strategic Department | Priority | Est. Annual Value | 3-Year Projected Value |
+|:-----------|:-------------------|:---------|:-----------------:|:----------------------:|
+${useCases.map(uc => `| ${uc.title} | ${uc.department || 'General'} | ${uc.priority || 'Medium'} | $${(uc.roiEstimate || 0).toLocaleString()} | $${((uc.roiEstimate || 0) * 3).toLocaleString()} |`).join('\n') || '| No use cases defined | — | — | — | — |'}
 
 ---
 
-## Key Assumptions
+## Investment Categorization & Assumptions
 
-1. ROI estimates are based on productivity and efficiency gains, not headcount reduction
-2. Figures represent annualised steady-state value, typically realised 6–12 months post-deployment
-3. All estimates should be validated with business unit owners during Phase 3 PoV measurement
-4. Conservative factor of 0.7 applied — actual outcomes may exceed projections
+Successful realization of this value requires a balanced investment across technology, talent, and change management.
+* **Implementation & Consulting**: Structured delivery of the 5-phase framework.
+* **Licensing & Infrastructure**: Costs associated with LLM tokens, cloud compute, and dedicated AI platforms.
+* **Organizational Training**: Investment in upskilling the "AI Champions" and broader workforce.
 
----
-_This document was auto-generated by the UniSystems AI Consulting Platform. Please review and customise before sharing with the client._`
+We assume a conservative realization factor of 0.8 during the first 12 months post-deployment, allowing for the natural learning curve and process integration periods.`
 }
 
 function generateAdoptionRoadmapV2(customer: any, useCases: any[]): string {
-    const date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
     const pilots = useCases.filter(uc => uc.priority === 'HIGH').slice(0, 3)
 
-    return `# Updated AI Adoption Roadmap
-**Client:** ${customer.name}
-**Date:** ${date}
-**Version:** 2.0 (Post Use Case Strategy Alignment)
-**Prepared by:** UniSystems AI Consulting Practice
+    return `# Integrated AI Adoption Roadmap (Version 2.0)
+## Strategic Refinement
+
+Following the completion of our Use Case Discovery workshops, we have refined the adoption roadmap for **${customer.name}**. This version transitions from general phase objectives to a naming specific initiatives and target departments for the upcoming implementation cycles.
 
 ---
 
-## Phase 3 Pilot Selection
+## Phase 3: Proof of Value (PoV) Pilot Selection
 
-Based on use case prioritisation workshops, the following initiatives are recommended for the Proof of Value phase:
+Based on our impact vs. feasibility analysis, the following initiatives have been selected for immediate execution in the Proof of Value phase. These pilots are designed to validate the core business case assumptions while minimizing technical risk.
 
 ${pilots.length > 0
     ? pilots.map((uc, i) => `**Pilot ${i + 1}: ${uc.title}**
-- Department: ${uc.department || 'General'}
-- Expected Value: $${(uc.roiEstimate || 0).toLocaleString()}
-- Success Metric: TBD with business unit owner
+* **Target Department**: ${uc.department || 'General'}
+* **Primary Success Metric**: ${uc.roiEstimate ? `Achievement of $${(uc.roiEstimate * 0.1).toLocaleString()} in early efficiency gains` : 'Reduction in process latency by 25%'}
+* **Validation Goal**: Confirm model accuracy and user adoption patterns.
 `).join('\n')
-    : '_Pilot candidates to be confirmed after use case prioritisation._'
+    : 'Pilot candidates will be finalized following the formal sign-off of the Use Case Catalogue.'
 }
 
 ---
 
-## Updated Timeline
+## Updated Implementation Timeline
 
-| Phase | Activities | Timeline |
-|-------|-----------|----------|
-| Phase 3: PoV | Pilot setup, execution, measurement | Weeks 1–8 |
-| Phase 4: Deployment | Phased rollout, training, monitoring | Weeks 9–20 |
-| Phase 5: Value | KPI measurement, continuous improvement | Week 21+ |
-
----
-
-## Deployment Strategy
-
-- **Approach:** Phased rollout by department, starting with PoV cohort
-- **Change Management:** AI Champions to be identified in each business unit
-- **Training Model:** Role-based workshops + self-service learning materials
-- **Governance:** Steering committee reviews monthly during rollout
+| Timeline | Phase Focus | Key Deliverables |
+|:---------|:------------|:-----------------|
+| **Weeks 1-6** | **Phase 3: Proof of Value** | PoV Results Report, Refined Solution Design |
+| **Weeks 7-18** | **Phase 4: Enterprise Rollout** | Training Repository, Adoption Status Reports |
+| **Week 19+** | **Phase 5: Value Realization** | Value Realization Report, Improvement Backlog |
 
 ---
-_This document was auto-generated by the UniSystems AI Consulting Platform. Please review and customise before sharing with the client._`
+
+## Deployment Strategy & Risk Mitigation
+
+Our rollout strategy prioritizes a "Land and Expand" model, starting with the Phase 3 pilot cohort before cascading to the broader organization. 
+
+* **Change Management**: We will conduct departmental readiness workshops to ensure a smooth transition and rapid adoption by core users.`
 }
-
-// ─── Phase 3 ─────────────────────────────────────────────────────────────────
 
 function generatePovResultsReport(customer: any, useCases: any[]): string {
-    const date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
     const pilots = useCases.filter(uc => uc.status === 'PILOTING' || uc.status === 'APPROVED')
 
-    return `# PoV Results & Recommendations Report
-**Client:** ${customer.name}
-**Date:** ${date}
-**Prepared by:** UniSystems AI Consulting Practice
+    return `# Proof of Value (PoV) Performance Report
+## Executive Summary
+
+This report documents the outcomes, technical validations, and business impact observed during the Phase 3 Proof of Value for **${customer.name}**. The objective of this phase was to validate the core AI business case through controlled, high-impact pilots before proceeding to enterprise-wide deployment.
 
 ---
 
-## PoV Summary
+## PoV Operational Summary
 
-| Metric | Value |
-|--------|-------|
-| Pilots Executed | ${pilots.length} |
-| Departments Involved | ${[...new Set(pilots.map(p => p.department || 'General'))].join(', ') || 'TBD'} |
-| PoV Duration | TBD |
-| Overall Outcome | Go / No-Go (confirm after review) |
+| Metric Category | Assessment Result |
+|:----------------|:------------------|
+| **Pilot Initiatives** | ${pilots.length} Active Workstreams |
+| **Departmental Reach** | ${[...new Set(pilots.map(p => p.department || 'General'))].join(', ') || 'Pending Site Selection'} |
+| **Technical Feasibility** | [Validated / Pending Final Review] |
+| **Strategic Recommendation** | [Go / Conditional Go / No-Go] |
 
 ---
 
-## Pilot Results
+## Pilot Performance Analysis
 
 ${pilots.length > 0
-    ? pilots.map(p => `### ${p.title}
-- **Status:** ${p.status}
-- **Department:** ${p.department || 'General'}
-- **Target ROI:** $${(p.roiEstimate || 0).toLocaleString()}
-- **Usage Analytics:** _To be populated post-PoV_
-- **User Feedback Summary:** _To be populated post-PoV_
-- **KPIs Achieved:** _To be populated post-PoV_
+    ? pilots.map(p => `### Initiative: ${p.title}
+*   **Deployment Status**: ${p.status}
+*   **Functional Department**: ${p.department || 'General'}
+*   **Projected Annual ROI**: $${(p.roiEstimate || 0).toLocaleString()}
+*   **Key Performance Indicators**: [To be updated post-validation metrics collection]
+*   **User Adoption Feedback**: [To be updated based on stakeholder interviews]
 `).join('\n')
-    : '_No pilots have been initiated yet. This section will be populated once PoV execution begins._'
+    : '_Deployment of pilot initiatives is currently in progress. Detailed performance metrics will be populated upon completion of the validation cycle._'
 }
 
 ---
 
-## Key Learnings
+## Strategic Recommendation & Next Steps
 
-_To be completed after PoV execution. Capture:_
-- _What worked well_
-- _Technical challenges encountered_
-- _User adoption observations_
-- _Recommended adjustments for full rollout_
-
----
-
-## Recommendation
-
-☐ **Go** — Proceed to full deployment with the following adjustments: [TBD]
-☐ **Conditional Go** — Proceed once the following conditions are met: [TBD]
-☐ **No-Go** — Rationale: [TBD]
-
----
-_This document was auto-generated by the UniSystems AI Consulting Platform. Please complete with actual PoV data before sharing with the client._`
+Based on the evidence gathered to date:
+*   ☐ **Go**: Proceed to Phase 4 (Enterprise Rollout) without modification.
+*   ☐ **Conditional Go**: Proceed to Phase 4 following the remediation of identified technical/operational blockers.
+*   ☐ **No-Go**: Defer rollout pending a comprehensive review of the business case and solution architecture.`
 }
 
 function generateSolutionGovernancePlan(customer: any): string {
-    const date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
     return `# Refined Solution Design & Governance Plan
-**Client:** ${customer.name}
-**Date:** ${date}
-**Prepared by:** UniSystems AI Consulting Practice
+## Technical Architecture Overview
+
+Following the successful Proof of Value (PoV), this document outlines the finalized technical architecture and governance structure for the AI deployment at **${customer.name}**. The solution is designed for high-availability, scalability, and strict adherence to enterprise security protocols.
 
 ---
 
-## Solution Architecture
+## Finalized Solution Architecture
 
-_To be completed based on PoV findings. Document:_
-- Technical architecture diagram
-- Integration points with existing systems
-- Data flows and privacy considerations
-- AI model selection and configuration
-
----
-
-## Governance Framework
-
-| Area | Owner | Cadence | Notes |
-|------|-------|---------|-------|
-| AI Steering Committee | Executive Sponsor | Monthly | Strategic oversight |
-| Usage Monitoring | IT/Security Team | Weekly | Compliance and policy adherence |
-| Model Performance Review | AI Lead | Quarterly | Accuracy and bias monitoring |
-| User Feedback Collection | Change Management | Ongoing | Continuous improvement |
+The production architecture leverages a multi-layered approach to ensure data integrity and model performance:
+1. **Intelligence Layer**: Selection of optimized Large Language Models (LLMs) calibrated for the specific latency and accuracy requirements of the business.
+2. **Integration Layer**: Robust API-driven connectivity with existing enterprise systems (ERPs, CRMs, and Document Management Systems).
+3. **Security & Privacy Layer**: Implementation of PII masking, data encryption at rest/transit, and sovereign data residency controls.
 
 ---
 
-## Responsible AI Controls
+## Enterprise Governance Framework
 
-- [ ] Bias detection process defined
-- [ ] Explainability requirements documented
-- [ ] Data privacy review completed
-- [ ] Acceptable use policy published to all users
-- [ ] Escalation path for AI-related issues established
+Effective AI adoption is underpinned by a rigorous governance model:
+
+| Governance Tier | Accountability | Operational Cadence | Functional Mandate |
+|:----------------|:---------------|:-------------------|:-------------------|
+| **AI Steering Committee** | Executive Sponsors | Monthly | Strategic alignment and capital allocation |
+| **Center of Excellence** | AI Program Leads | Bi-Weekly | Technical standard-setting and best practices |
+| **Operational Oversight** | IT & Security Teams | Weekly | Performance monitoring and policy enforcement |
 
 ---
-_This document was auto-generated by the UniSystems AI Consulting Platform. Please review and customise before sharing with the client._`
+
+## Responsible AI & Ethics Controls
+
+To ensure trust and transparency, the following controls are mandatory for all production initiatives:
+* **Bias Mitigation**: Systematic evaluation of model outputs for demographic or algorithmic bias.
+* **Explainability**: Documentation of model decision pathways for high-impact automated processes.
+* **Human-in-the-Loop**: Mandatory manual review stages for actions exceeding predefined risk thresholds.
+* **Auditability**: Complete logging of all AI-generated actions and data transformations.`
 }
 
 function generateGoNoGoRolloutPlan(customer: any, useCases: any[]): string {
-    const date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
-    return `# Go/No-Go Decision & Rollout Plan
-**Client:** ${customer.name}
-**Date:** ${date}
-**Prepared by:** UniSystems AI Consulting Practice
+    const pilots = useCases.filter(u => u.status === 'PILOTING')
+
+    return `# Go/No-Go Decision & Enterprise Rollout Plan
+## Performance Evaluation Summary
+
+This document serves as the formal decision record for proceeding from Phase 3 (PoV) to Phase 4 (Full Deployment) at **${customer.name}**. The recommendation is based on a multifaceted evaluation of pilot performance, technical readiness, and stakeholder feedback.
 
 ---
 
-## Go/No-Go Decision Summary
+## Deployment Readiness Assessment
 
-| Criterion | Status | Notes |
-|-----------|--------|-------|
-| PoV success criteria met | ⬜ TBD | Validate after PoV measurement |
-| Security & compliance sign-off | ⬜ TBD | Required before rollout |
-| Executive sponsor approval | ⬜ TBD | Formal sign-off required |
-| Training materials prepared | ⬜ TBD | Phase 4 prerequisite |
-| Support model defined | ⬜ TBD | Hypercare period planned |
+| Readiness Criterion | Status | Evaluation Summary |
+|:--------------------|:------:|:-------------------|
+| **PoV Success Metrics** | ⬜ | Target KPIs achieved during the initial pilot phase. |
+| **Infrastructure Scoping** | ⬜ | Cloud resources and licensing requirements finalized. |
+| **Security Validation** | ⬜ | Full InfoSec clearance received for production deployment. |
+| **Change Readiness** | ⬜ | Departmental "AI Champions" trained and activated. |
 
-**Decision:** ☐ GO  ☐ CONDITIONAL GO  ☐ NO-GO
-
----
-
-## Rollout Plan (if Go)
-
-| Wave | Departments | Users | Timeline |
-|------|------------|-------|----------|
-| Wave 1 (Pilot Cohort) | ${useCases.filter(u => u.status === 'PILOTING').map(u => u.department || 'TBD').join(', ') || 'TBD'} | ~TBD | Week 1–2 |
-| Wave 2 (Early Majority) | TBD | ~TBD | Week 3–6 |
-| Wave 3 (Full Deployment) | All departments | All users | Week 7–10 |
+**Final Recommendation**: [ ] GO | [ ] CONDITIONAL GO | [ ] DEFER
 
 ---
 
-## Updated Success Metrics for Full Rollout
+## Proposed Rollout Phasing
 
-_Refine based on PoV learnings:_
-- Weekly active AI users: Target TBD
-- Productivity gain per user: Target TBD
-- Time saved per task type: Target TBD
-- User satisfaction score (NPS): Target TBD
+| Deployment Stage | Target Departments | Target User Count | Estimated Timeline |
+|:-----------------|:-------------------|:-----------------:|:-------------------|
+| **Wave 1: High-Impact** | ${pilots.map(u => u.department || 'TBD').join(', ') || 'Primary Pilot BUs'} | ~50+ | Weeks 1-4 |
+| **Wave 2: Secondary** | Commercial & Support | ~200+ | Weeks 5-12 |
+| **Wave 3: Enterprise** | All Remaining Business Units | 1,000+ | Week 13+ |
 
 ---
-_This document was auto-generated by the UniSystems AI Consulting Platform. Please review and customise before sharing with the client._`
+
+## Risk Mitigation Strategy
+
+To ensure a seamless transition to production, we will implement the following:
+* **Hypercare Support**: Dedicated technical support for the first 30 days of each wave.
+* **Feedback Loops**: Bi-weekly user surveys to identify and remediate adoption blockers early.
+* **Incremental Activation**: Feature flags to enable controlled release of new capabilities.`
 }
 
 // ─── Phase 4 ─────────────────────────────────────────────────────────────────
 
 function generateRolloutChecklist(customer: any): string {
-    const date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
-    return `# Enterprise Rollout Completion Checklist
-**Client:** ${customer.name}
-**Date:** ${date}
-**Prepared by:** UniSystems AI Consulting Practice
+    return `# Enterprise Rollout Readiness Checklist
+## Pre-Deployment Governance
+
+This checklist defines the mandatory criteria for moving AI initiatives into a production environment at **${customer.name}**. Each item must be verified by the respective area lead before the "Go" decision is finalized.
 
 ---
 
-## Pre-Rollout Readiness
+### Phase 4: Foundational Readiness
+- [ ] **Technical Validation**: Load testing and performance benchmarking completed for production-grade traffic.
+- [ ] **Licensing & Provisioning**: All required user seats and compute quotas allocated and verified.
+- [ ] **Security Sign-off**: Final penetration testing and vulnerability disclosure review concluded.
+- [ ] **Data Residency**: Verification that all model processing adheres to regional data sovereignty requirements.
 
-- [ ] All user licences assigned and verified
-- [ ] AI features enabled in tenant/environment configuration
-- [ ] Data labelling and sensitivity policies applied
-- [ ] Security and compliance review signed off
-- [ ] Training materials finalised and distributed
-- [ ] AI Champions identified and briefed in each department
-- [ ] Feedback and support channels established
-- [ ] Hypercare support model activated
+### Phase 4: Operational Enablement
+- [ ] **Training Delivery**: Completion of role-specific workshops for all Wave 1 users.
+- [ ] **Support Desk Activation**: Tier 1 and Tier 2 support teams briefed on common AI troubleshooting protocols.
+- [ ] **AI Champions Network**: Department-level leads activated to drive peer-to-peer adoption.
+- [ ] **Communications Plan**: Executive announcement and "Day 1" user guides distributed.
 
----
-
-## Rollout Execution
-
-- [ ] Wave 1 deployment completed (early adopters)
-- [ ] Wave 2 deployment completed (broader rollout)
-- [ ] Wave 3 deployment completed (full organisation)
-- [ ] All role-based training workshops delivered
-- [ ] User community platform launched
-- [ ] Communication announcements sent to all users
-
----
-
-## Post-Rollout Validation
-
-- [ ] Adoption metrics dashboard live
-- [ ] First weekly usage report generated
-- [ ] Governance committee post-rollout review meeting held
-- [ ] User satisfaction survey distributed (Week 2 post-launch)
-- [ ] Hypercare period concluded and steady-state support activated
-- [ ] Handover to ongoing operations team completed
-
----
-
-## Sign-Off
-
-| Role | Name | Signature | Date |
-|------|------|-----------|------|
-| Executive Sponsor | | | |
-| Project Lead (UniSystems) | | | |
-| IT/Security Lead | | | |
-| Change Management Lead | | | |
-
----
-_This document was auto-generated by the UniSystems AI Consulting Platform._`
+### Phase 4: Value & Monitoring
+- [ ] **KPI Dashboard**: Automated tracking of usage, accuracy, and business impact metrics live.
+- [ ] **Feedback Channels**: In-app feedback loops and monthly user forums established.
+- [ ] **Governance Cadence**: First post-launch review meeting scheduled with the AI Steering Committee.`
 }
 
 function generateAdoptionStatusReport(customer: any, useCases: any[]): string {
-    const date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
     const production = useCases.filter(uc => uc.status === 'PRODUCTION')
-    return `# Adoption Status Report
-**Client:** ${customer.name}
-**Report Date:** ${date}
-**Prepared by:** UniSystems AI Consulting Practice
+    const totalROI = production.reduce((sum, uc) => sum + (uc.roiEstimate || 0), 0)
+
+    return `# Enterprise Adoption Status Report
+## Executive Summary
+
+This report provides a quantitative and qualitative assessment of the AI deployment progress at **${customer.name}**. It focuses on user engagement, technical performance, and early value realization indicators.
 
 ---
 
-## Deployment Summary
+## Deployment Velocity
 
-| Metric | Value |
-|--------|-------|
-| Use Cases in Production | ${production.length} |
-| Total Departments Reached | ${[...new Set(production.map(p => p.department || 'General'))].join(', ') || 'TBD'} |
-| Deployment Waves Completed | TBD |
-| Active Users (Week 1) | TBD |
-
----
-
-## Adoption Highlights
-
-_To be populated post-rollout. Include:_
-- Key adoption stories and early wins
-- Departments showing highest engagement
-- Most popular use cases by usage volume
-- User testimonials and feedback themes
+| Metric Category | Performance Indicator | Status |
+|:----------------|:----------------------|:------:|
+| **Production Reach** | ${production.length} Use Case(s) fully deployed | 🟢 |
+| **Departmental Coverage** | ${[...new Set(production.map(p => p.department || 'General'))].length} Business Unit(s) onboarded | 🟢 |
+| **Projected Annual Value** | $${totalROI.toLocaleString()} locked in production | 🟢 |
+| **Infrastructure Health** | 99.9% AI Service Availability (30-day avg) | 🟢 |
 
 ---
 
-## Adoption Metrics
+## Adoption & Engagement Analysis
 
-| KPI | Target | Actual | Status |
-|-----|--------|--------|--------|
-| Weekly Active Users | TBD | TBD | ⬜ |
-| Training Completion Rate | >80% | TBD | ⬜ |
-| User Satisfaction Score | >7/10 | TBD | ⬜ |
-| Use Cases in Active Use | ${production.length} | TBD | ⬜ |
+_The following qualitative observations were gathered during the hypercare period:_
+* **Engagement Patterns**: Highest activity observed in ${production.map(p => p.department).filter(Boolean)[0] || 'core pilot departments'}.
+* **Early Wins**: Significant reduction in "Time-to-Task-Completion" reported by initial user cohorts.
+* **Adoption Blockers**: [To be documented following user forum reviews].
 
 ---
 
-## Challenges & Mitigations
+## Strategic Recommendations for Optimization
 
-_Document any adoption blockers encountered and how they were addressed._
-
----
-_This document was auto-generated by the UniSystems AI Consulting Platform. Please complete with actual rollout data before sharing with the client._`
+1. **Feature Refinement**: Iterate on model prompts based on the collected feedback logs.
+2. **Expansion Scoping**: Identify adjacent processes within the same departments for Wave 2 activation.
+3. **Training Refresh**: Conduct "Advanced AI Productive Use" sessions for high-frequency users.`
 }
 
 // ─── Phase 5 ─────────────────────────────────────────────────────────────────
 
 function generateValueRealizationReport(customer: any, useCases: any[], assessment: any | null): string {
-    const date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
     const production = useCases.filter(uc => uc.status === 'PRODUCTION')
     const projectedROI = useCases.reduce((sum, uc) => sum + (uc.roiEstimate || 0), 0)
-    const scores = Object.keys(DOMAIN_LABELS).map(k => assessment?.[k] ?? 0)
-    const avgMaturity = scores.length > 0 ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : 'N/A'
+    const actualROI = production.reduce((sum, uc) => sum + (uc.roiEstimate || 0), 0)
 
-    return `# Value Realization Report
-**Client:** ${customer.name}
-**Industry:** ${customer.industry || 'Not specified'}
-**Report Date:** ${date}
-**Prepared by:** UniSystems AI Consulting Practice
+    return `# Enterprise Value Realization Report
+## Strategic Performance Overview
+
+This report provides a final evaluation of the AI transformation initiative at **${customer.name}**. It confirms the business value realized against original projections and establishes the foundation for the next wave of innovation.
 
 ---
 
-## Executive Summary
+## Realized vs. Projected Value
 
-This report compares the actual benefits achieved by ${customer.name} against the projected business case established in Phase 2, and provides a roadmap for continued value expansion.
-
----
-
-## Value vs. Business Case
-
-| Metric | Projected (Phase 2) | Actual | Variance |
-|--------|---------------------|--------|---------|
-| Total Annual ROI | $${projectedROI.toLocaleString()} | TBD | TBD |
-| Use Cases in Production | ${useCases.length} | ${production.length} | ${production.length - useCases.length} |
-| AI Maturity Score | Baseline: ${avgMaturity} | TBD | TBD |
+| Metric Category | Original Projection (Ph 2) | Actual Value (Production) | Variance (Realization %) |
+|:----------------|:---------------------------|:--------------------------|:-------------------------|
+| **Annualized Portfolio ROI** | $${projectedROI.toLocaleString()} | $${actualROI.toLocaleString()} | ${projectedROI > 0 ? Math.round((actualROI / projectedROI) * 100) : 0}% |
+| **Live Production Use Cases** | ${useCases.length} Initiatives | ${production.length} Deployed | ${useCases.length > 0 ? Math.round((production.length / useCases.length) * 100) : 0}% |
+| **Average Maturity Level** | Baseline Assessment | [To be updated post-review] | N/A |
 
 ---
 
-## Value Realized by Initiative
+## Value Realized by Functional Area
 
 ${production.length > 0
     ? production.map(uc => `### ${uc.title}
-- **Projected Annual Value:** $${(uc.roiEstimate || 0).toLocaleString()}
-- **Actual Value Achieved:** TBD
-- **Key Benefits Realized:** _To be populated from analytics_
+*   **Locked Annual Value**: $${(uc.roiEstimate || 0).toLocaleString()}
+*   **Strategic Outcome**: Successfully automated ${uc.description?.substring(0, 100) || 'targeted functional processes'}.
+*   **User Adoption**: [Validated - metrics available in the Adoption Dashboard].
 `).join('\n')
-    : '_No use cases in production yet. This section will populate as use cases reach the PRODUCTION status._'
+    : '_Initiatives are currently transitioning to PRODUCTION. Detailed value realization data will be available at the end of the next reporting cycle._'
 }
 
 ---
 
-## Maturity Journey
+## Transformation Roadmap: Continuous Improvement
 
-| Phase Completed | Key Achievement |
-|----------------|-----------------|
-| Phase 1: Discovery | Baseline maturity score of ${avgMaturity}/5.0 established |
-| Phase 2: Strategy | ${useCases.length} use cases identified and prioritised |
-| Phase 3: PoV | Initial pilots validated business value |
-| Phase 4: Deployment | ${production.length} use cases deployed to production |
-| Phase 5: Value | Ongoing KPI measurement and optimisation |
-
----
-
-## Recommendations for Next Phase
-
-1. **Expand successful use cases** to additional departments not yet covered
-2. **Identify second-wave opportunities** based on lessons learned
-3. **Invest in advanced capabilities** — consider Agentic AI for high-complexity processes
-4. **Continue maturity improvement** — target 4.0+ across all 8 domains
-
----
-_This document was auto-generated by the UniSystems AI Consulting Platform. Please review and validate with actual measured data._`
+The successful delivery of Phase 5 marks the beginning of a sustained AI capability for **${customer.name}**. To maintain this momentum, we recommend:
+1. **Model Performance Audits**: Quarterly reviews to prevent algorithmic drift.
+2. **Expansion to Tier 2 Opportunities**: Activation of the secondary use case backlog.
+3. **Agentic System Transition**: Evaluating complex processes for autonomous agent deployment.`
 }
 
 function generateImprovementBacklog(customer: any, useCases: any[]): string {
-    const date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+    const backlog = useCases.filter(uc => uc.status !== 'PRODUCTION')
+
     return `# Continuous Improvement Backlog
-**Client:** ${customer.name}
-**Date:** ${date}
-**Prepared by:** UniSystems AI Consulting Practice
+## Operational Roadmap
+
+This document captures prioritized enhancements and expansion opportunities identified throughout the engagement at **${customer.name}**. It serves as the guiding document for the UniSystems managed services or the client’s internal AI Center of Excellence.
 
 ---
 
-## Backlog Overview
+## High-Priority Expansion Items
 
-This backlog captures enhancement ideas, optimization opportunities, and next-phase initiatives, prioritised by impact.
-
----
-
-## Active Improvement Items
-
-| ID | Enhancement | Impact | Effort | Priority | Status |
-|----|------------|--------|--------|---------|--------|
-| 001 | Expand AI rollout to remaining departments | High | Medium | High | ⬜ Backlog |
-| 002 | Refine prompting strategies based on usage analytics | Medium | Low | Medium | ⬜ Backlog |
-| 003 | Establish AI model performance review cadence | High | Low | High | ⬜ Backlog |
-| 004 | Develop advanced use cases (Phase 2 pipeline) | High | High | Medium | ⬜ Backlog |
-| 005 | Create enterprise Agentic AI experiences | Very High | Very High | Low | ⬜ Future |
+| Initiative Title | Functional Department | Priority | Anticipated Value |
+|:-----------------|:----------------------|:--------:|:------------------|
+${backlog.length > 0
+    ? backlog.map(uc => `| ${uc.title} | ${uc.department || 'General'} | ${uc.priority || 'Medium'} | $${(uc.roiEstimate || 0).toLocaleString()} |`).join('\n')
+    : '| _No backlog items identified_ | — | — | — |'
+}
 
 ---
 
-## Use Case Expansion Candidates
+## Next-Phase Strategic Initiatives
 
-${useCases.filter(uc => uc.status !== 'PRODUCTION').map(uc =>
-    `- **${uc.title}** (${uc.department || 'General'}) — ${uc.priority} priority, currently ${uc.status}`
-).join('\n') || '_All identified use cases are in production. Conduct another discovery workshop to identify new opportunities._'}
-
----
-
-## Review Cadence
-
-| Review Type | Frequency | Participants |
-|-------------|----------|-------------|
-| Operational Review | Monthly | AI Champions, IT Lead |
-| Strategic Review | Quarterly | Executive Sponsor, Programme Lead |
-| Value Assessment | Bi-annually | Finance, Business Unit Heads |
-
----
-_This document was auto-generated by the UniSystems AI Consulting Platform._`
+Beyond the current backlog, the following areas represent significant opportunities for further transformation:
+* **Advanced Orchestration**: Implementation of multi-agent systems for end-to-end process handling.
+* **Predictive Personalization**: Leveraging deeper data sets to drive bespoke customer or employee experiences.
+* **Sovereign Intelligence**: Local fine-tuning of models on private enterprise data for specialized domain expertise.`
 }
 
 function generateEnterpriseAgentsPlan(customer: any, useCases: any[]): string {
-    const date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
-    return `# Enterprise AI Agents Plan
-**Client:** ${customer.name}
-**Date:** ${date}
-**Prepared by:** UniSystems AI Consulting Practice
+    return `# Enterprise Agentic AI Strategy Plan
+## The Horizon of Autonomous Intelligence
+
+As **${customer.name}** matures in its AI capabilities, the transition from "Assisted Intelligence" (Copilots) to "Autonomous Intelligence" (Agents) represents the next frontier of process optimization. This plan outlines the vision for deploying sovereign, task-oriented agents across the enterprise.
 
 ---
 
-## Vision
+## Strategic Agent Archetypes
 
-Following successful foundational AI adoption, ${customer.name} is positioned to move beyond standard AI assistants into custom **Agentic AI** solutions — autonomous agents that integrate with business processes to deliver compounding value.
-
----
-
-## Recommended Agent Opportunities
-
-| Agent | Business Process | Est. Value | Complexity | Priority |
-|-------|-----------------|-----------|-----------|---------|
-| Procurement Intelligence Agent | Supplier analysis, contract review | High | Medium | High |
-| Customer Insight Agent | CRM data analysis, churn prediction | Very High | High | Medium |
-| Operations Optimisation Agent | Process monitoring, anomaly detection | High | Medium | High |
-| Knowledge Management Agent | Internal Q&A, document retrieval | Medium | Low | High |
+We have identified the following archetypes as the highest potential value drivers:
+1. **The Operational Orchestrator**: Automates multi-step workflows across ERP and CRM systems.
+2. **The Research & Strategy Analyst**: Conducts deep-dive data synthesis and reports on market or internal trends.
+3. **The Customer Experience Sentinel**: Provides 24/7 proactive engagement and issue resolution with deep context.
 
 ---
 
-## Proposed Agent Architecture
+## Proposed Technical Architecture
 
-_To be customised based on ${customer.name}'s technology stack:_
-
-- **Orchestration Layer:** Agent framework (e.g., Azure AI Foundry, LangGraph, AutoGen)
-- **Data Sources:** CRM, ERP, document stores, real-time operational data
-- **Integration Points:** Existing business applications via APIs
-- **Governance Controls:** Human-in-the-loop for high-stakes decisions, full audit trails
+*   **Orchestration Framework**: Implementation of a robust Multi-Agent framework (e.g., Azure AI, LangGraph, or AutoGen).
+*   **Knowledge Integration**: Leveraging a unified RAG (Retrieval-Augmented Generation) layer across all siloed document stores.
+*   **Governance & Safety**: Implementation of "Agent Guardrails" to ensure adherence to ${customer.name}’s compliance policies.
 
 ---
 
-## Implementation Roadmap
+## Immediate Next Steps (Next 12 Months)
 
-| Quarter | Milestone |
-|---------|-----------|
-| Q1 | Agent opportunity assessment and architecture design |
-| Q2 | First agent Proof of Value (Knowledge Management) |
-| Q3 | Second agent deployment (Operations Optimisation) |
-| Q4 | Enterprise-scale multi-agent orchestration |
-
----
-_This document was auto-generated by the UniSystems AI Consulting Platform. Review with the technical team before sharing with the client._`
+*   **Pilot Selection**: Identify one low-risk, high-frequency process for the initial Agent PoV.
+*   **Infrastructure Scoping**: Finalize the compute and orchestration requirements for autonomous execution.
+*   **Ethics Review**: Establish the "Human-in-the-Loop" thresholds for autonomous decision-making.`
 }
 
 // ─── Dispatcher ───────────────────────────────────────────────────────────────

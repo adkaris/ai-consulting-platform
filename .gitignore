@@ -49,3 +49,12 @@ next-env.d.ts
 
 # Uploaded files
 /uploads/
+
+# Demo recordings
+/demo-output/
+
+# DB backups
+dev.db.backup*
+
+# Scratch / dev scripts
+test-prisma.ts

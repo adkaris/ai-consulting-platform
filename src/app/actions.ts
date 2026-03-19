@@ -70,9 +70,16 @@ export async function addUseCase(customerId: string, formData: FormData) {
     const description = formData.get('description') as string
     const department = formData.get('department') as string
     const priority = formData.get('priority') as string
-    const roiEstimate = formData.get('roiEstimate') ? Number(formData.get('roiEstimate')) : null
+    const complexity = formData.get('complexity') ? Number(formData.get('complexity')) : 3
+    const ucValue = formData.get('value') ? Number(formData.get('value')) : 3
+    const roisJson = formData.get('rois') as string
+    const rois: { type: string; value: number; unit: string; description?: string }[] =
+        roisJson ? JSON.parse(roisJson) : []
 
-    await prisma.useCase.create({
+    // Keep roiEstimate as sum of MONEY rois for backward-compat sorting
+    const roiEstimate = rois.filter(r => r.type === 'MONEY').reduce((s, r) => s + r.value, 0) || null
+
+    const useCase = await prisma.useCase.create({
         data: {
             customerId,
             title,
@@ -80,10 +87,24 @@ export async function addUseCase(customerId: string, formData: FormData) {
             department,
             priority,
             roiEstimate,
+            complexity,
+            value: ucValue,
             status: 'DRAFT',
             phase: 2
         }
     })
+
+    if (rois.length > 0) {
+        await prisma.useCaseROI.createMany({
+            data: rois.map(r => ({
+                useCaseId: useCase.id,
+                type: r.type,
+                value: r.value,
+                unit: r.unit,
+                description: r.description || null
+            }))
+        })
+    }
 
     revalidatePath(`/customers/${customerId}`)
 }
@@ -94,20 +115,42 @@ export async function updateUseCase(useCaseId: string, customerId: string, formD
     const department = formData.get('department') as string
     const priority = formData.get('priority') as string
     const status = formData.get('status') as string
-    const roiEstimate = formData.get('roiEstimate') ? Number(formData.get('roiEstimate')) : null
+    const complexity = formData.get('complexity') ? Number(formData.get('complexity')) : undefined
+    const ucValue = formData.get('value') ? Number(formData.get('value')) : undefined
+    const roisJson = formData.get('rois') as string
+    const rois: { type: string; value: number; unit: string; description?: string }[] =
+        roisJson ? JSON.parse(roisJson) : []
+
+    const roiEstimate = rois.filter(r => r.type === 'MONEY').reduce((s, r) => s + r.value, 0) || null
 
     await prisma.useCase.update({
         where: { id: useCaseId },
-        data: {
-            title,
-            description,
-            department,
-            priority,
-            status,
-            roiEstimate
-        }
+        data: { title, description, department, priority, status, roiEstimate, complexity, value: ucValue }
     })
 
+    // Replace ROIs: delete existing, create new
+    await prisma.useCaseROI.deleteMany({ where: { useCaseId } })
+    if (rois.length > 0) {
+        await prisma.useCaseROI.createMany({
+            data: rois.map(r => ({
+                useCaseId,
+                type: r.type,
+                value: r.value,
+                unit: r.unit,
+                description: r.description || null
+            }))
+        })
+    }
+
+    revalidatePath(`/customers/${customerId}`)
+    revalidatePath('/use-cases')
+}
+
+export async function updateUseCaseMetrics(useCaseId: string, customerId: string, complexity: number, value: number) {
+    await prisma.useCase.update({
+        where: { id: useCaseId },
+        data: { complexity, value }
+    })
     revalidatePath(`/customers/${customerId}`)
 }
 
@@ -117,14 +160,14 @@ export async function deleteUseCase(useCaseId: string, customerId: string) {
     })
 
     revalidatePath(`/customers/${customerId}`)
+    revalidatePath('/use-cases')
 }
 
 export async function getAllUseCases() {
     return await prisma.useCase.findMany({
         include: {
-            customer: {
-                select: { name: true }
-            }
+            customer: { select: { name: true } },
+            rois: true
         },
         orderBy: { createdAt: 'desc' }
     })
@@ -292,7 +335,11 @@ export async function downloadDeliverableWord(deliverableId: string) {
         throw new Error('Deliverable content not found.')
     }
 
-    const buffer = await convertMarkdownToDocx(record.deliverableKey.replace(/_/g, ' '), record.generatedContent)
+    const buffer = await convertMarkdownToDocx(
+        record.deliverableKey,
+        record.customer.name,
+        record.generatedContent,
+    )
     return buffer.toString('base64')
 }
 
@@ -394,25 +441,33 @@ export async function processMeetingNotes(customerId: string, notes: string) {
     return await analyzeMeetingNotes(notes)
 }
 
-export async function applyIntakeResults(customerId: string, data: IntakeResults) {
-    // 1. Save Assessment
-    await prisma.assessment.create({
-        data: {
-            customerId,
-            scoreStrategy: data.readinessScores.Strategy,
-            scoreData: data.readinessScores.Data,
-            scoreTech: data.readinessScores.Tech,
-            scoreSecurity: data.readinessScores.Security,
-            scoreSkills: data.readinessScores.Skills,
-            scoreOps: data.readinessScores.Ops,
-            scoreGovernance: data.readinessScores.Governance,
-            scoreFinancial: data.readinessScores.Financial,
-            status: 'COMPLETED',
-            completedAt: new Date()
-        }
-    })
+export async function applyIntakeResults(
+    customerId: string, 
+    data: { 
+        readinessScores: Record<string, number>, 
+        useCases: Array<any> 
+    }
+) {
+    // 1. Save Assessment (only if we have scores)
+    if (Object.keys(data.readinessScores).length > 0) {
+        await prisma.assessment.create({
+            data: {
+                customerId,
+                scoreStrategy: data.readinessScores.Strategy || 0,
+                scoreData: data.readinessScores.Data || 0,
+                scoreTech: data.readinessScores.Tech || 0,
+                scoreSecurity: data.readinessScores.Security || 0,
+                scoreSkills: data.readinessScores.Skills || 0,
+                scoreOps: data.readinessScores.Ops || 0,
+                scoreGovernance: data.readinessScores.Governance || 0,
+                scoreFinancial: data.readinessScores.Financial || 0,
+                status: 'COMPLETED',
+                completedAt: new Date()
+            }
+        })
+    }
 
-    // 2. Add Use Cases
+    // 2. Add Use Cases (only approved ones)
     for (const uc of data.useCases) {
         await prisma.useCase.create({
             data: {
@@ -428,13 +483,16 @@ export async function applyIntakeResults(customerId: string, data: IntakeResults
         })
     }
 
-    // 3. Advance Phase if in Phase 1
-    const customer = await prisma.customer.findUnique({ where: { id: customerId } })
-    if (customer && customer.currentPhase === 1) {
-        await prisma.customer.update({
-            where: { id: customerId },
-            data: { currentPhase: 2 }
-        })
+    // 3. Advance Phase if in Phase 1 and we added something substantial
+    const hasData = Object.keys(data.readinessScores).length > 0 || data.useCases.length > 0
+    if (hasData) {
+        const customer = await prisma.customer.findUnique({ where: { id: customerId } })
+        if (customer && customer.currentPhase === 1) {
+            await prisma.customer.update({
+                where: { id: customerId },
+                data: { currentPhase: 2 }
+            })
+        }
     }
 
     revalidatePath(`/customers/${customerId}`)
@@ -466,3 +524,70 @@ export async function exportCustomerStrategyToPptx(customerId: string) {
     return pptxBuffer.toString('base64')
 }
 
+
+// ─── Use Case Status ──────────────────────────────────────────────────────────
+export async function setUseCaseStatus(useCaseId: string, customerId: string, status: string) {
+    await prisma.useCase.update({
+        where: { id: useCaseId },
+        data: { status }
+    })
+    revalidatePath(`/customers/${customerId}`)
+    revalidatePath('/use-cases')
+}
+
+// ─── PoV Details (Phase 3) ────────────────────────────────────────────────────
+export async function updateUseCasePovDetails(useCaseId: string, customerId: string, formData: FormData) {
+    const povTimeframe = formData.get('povTimeframe') as string | null
+    const povSuccessCriteria = formData.get('povSuccessCriteria') as string | null
+    const povNotes = formData.get('povNotes') as string | null
+    await prisma.useCase.update({
+        where: { id: useCaseId },
+        data: { povTimeframe, povSuccessCriteria, povNotes }
+    })
+    revalidatePath(`/customers/${customerId}`)
+}
+
+// ─── Value Realization (Phase 5) ──────────────────────────────────────────────
+export async function updateUseCaseRealizedValue(useCaseId: string, customerId: string, realizedValue: number | null) {
+    await prisma.useCase.update({
+        where: { id: useCaseId },
+        data: { realizedValue }
+    })
+    revalidatePath(`/customers/${customerId}`)
+}
+
+// ─── Change Management Items (Phase 4) ───────────────────────────────────────
+export async function getChangeManagementItems(customerId: string) {
+    return await prisma.changeManagementItem.findMany({
+        where: { customerId },
+        orderBy: { createdAt: 'asc' }
+    })
+}
+
+export async function upsertChangeManagementItem(customerId: string, formData: FormData) {
+    const id = formData.get('id') as string | null
+    const category = formData.get('category') as string
+    const title = formData.get('title') as string
+    const description = formData.get('description') as string | null
+    const status = formData.get('status') as string
+    const owner = formData.get('owner') as string | null
+    const dueDate = formData.get('dueDate') as string | null
+    const notes = formData.get('notes') as string | null
+
+    if (id) {
+        await prisma.changeManagementItem.update({
+            where: { id },
+            data: { category, title, description, status, owner, dueDate, notes }
+        })
+    } else {
+        await prisma.changeManagementItem.create({
+            data: { customerId, category, title, description, status, owner, dueDate, notes }
+        })
+    }
+    revalidatePath(`/customers/${customerId}`)
+}
+
+export async function deleteChangeManagementItem(itemId: string, customerId: string) {
+    await prisma.changeManagementItem.delete({ where: { id: itemId } })
+    revalidatePath(`/customers/${customerId}`)
+}

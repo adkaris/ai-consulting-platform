@@ -20,18 +20,10 @@ export async function analyzeMeetingNotes(notes: string): Promise<IntakeResults>
 
     const lowercaseNotes = notes.toLowerCase();
 
-    // Basic heuristic-based "parsing" for the simulation
+    // THE ANALYZER STARTS WITH AN EMPTY SET OF FINDINGS
+    // ONLY ITEMS EXPLICITLY DETECTED OR IMPACTED BY THE CONTENT WILL BE RETURNED
     const results: IntakeResults = {
-        readinessScores: {
-            Strategy: 2.5,
-            Data: 2.0,
-            Tech: 3.0,
-            Security: 2.0,
-            Skills: 1.5,
-            Ops: 2.5,
-            Governance: 2.0,
-            Financial: 3.0,
-        },
+        readinessScores: {},
         useCases: [],
         sentimentSummary: "The client appears committed to AI transformation but is currently hampered by significant data silos and a lack of internal technical baseline. Executive sponsorship is present but requires a more formalized roadmap to align with business objectives."
     };
@@ -68,19 +60,40 @@ export async function analyzeMeetingNotes(notes: string): Promise<IntakeResults>
     }
 
     // Adjust scores based on keywords
-    if (lowercaseNotes.includes('executive') || lowercaseNotes.includes('champion') || lowercaseNotes.includes('vision')) {
+    if (lowercaseNotes.includes('executive') || lowercaseNotes.includes('champion') || lowercaseNotes.includes('vision') || lowercaseNotes.includes('ceo')) {
         results.readinessScores.Strategy = 4.0;
     }
     
-    if (lowercaseNotes.includes('legacy') || lowercaseNotes.includes('old') || lowercaseNotes.includes('on-prem')) {
+    if (lowercaseNotes.includes('legacy') || lowercaseNotes.includes('old') || lowercaseNotes.includes('on-prem') || lowercaseNotes.includes('architecture')) {
         results.readinessScores.Tech = 1.5;
     }
 
-    if (lowercaseNotes.includes('clean') || lowercaseNotes.includes('cloud') || lowercaseNotes.includes('snowflake') || lowercaseNotes.includes('databricks')) {
+    if (lowercaseNotes.includes('clean') || lowercaseNotes.includes('cloud') || lowercaseNotes.includes('snowflake') || lowercaseNotes.includes('databricks') || lowercaseNotes.includes('silos')) {
         results.readinessScores.Data = 4.5;
     }
 
-    // Ensure we always have at least one use case even if generic
+    if (lowercaseNotes.includes('security') || lowercaseNotes.includes('risk') || lowercaseNotes.includes('compliance')) {
+        results.readinessScores.Security = 2.0;
+    }
+
+    if (lowercaseNotes.includes('skills') || lowercaseNotes.includes('training') || lowercaseNotes.includes('talent')) {
+        results.readinessScores.Skills = 1.8;
+    }
+
+    if (lowercaseNotes.includes('ops') || lowercaseNotes.includes('operations') || lowercaseNotes.includes('workflow')) {
+        results.readinessScores.Ops = 2.3;
+    }
+
+    if (lowercaseNotes.includes('governance') || lowercaseNotes.includes('policy') || lowercaseNotes.includes('standards')) {
+        results.readinessScores.Governance = 3.2;
+    }
+
+    if (lowercaseNotes.includes('finance') || lowercaseNotes.includes('budget') || lowercaseNotes.includes('cost')) {
+        results.readinessScores.Financial = 2.8;
+    }
+
+/* 
+    // Removed generic fallback to respect "only impacted items" rule
     if (results.useCases.length === 0) {
         results.useCases.push({
             title: 'General AI Efficiency Pilot',
@@ -90,6 +103,7 @@ export async function analyzeMeetingNotes(notes: string): Promise<IntakeResults>
             roiEstimate: 25000
         });
     }
+    */
 
     return results;
 }
