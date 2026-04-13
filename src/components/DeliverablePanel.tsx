@@ -5,6 +5,7 @@ import { Sparkles, CheckCircle2, Clock, FileText, Upload, X, ExternalLink, Downl
 import { useRouter } from 'next/navigation'
 import { generateDeliverable, updateDeliverableStatus, downloadDeliverableWord } from '@/app/actions'
 import type { DeliverableDef } from '@/lib/methodology'
+import ConfirmDialog from '@/components/ConfirmDialog'
 
 interface DeliverableRecord {
     id: string
@@ -59,6 +60,7 @@ export default function DeliverablePanel({
     const [showContent, setShowContent] = useState(false)
     const [uploading, setUploading] = useState(false)
     const [generating, setGenerating] = useState(false)
+    const [confirmOpen, setConfirmOpen] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     const status = record?.status ?? 'PENDING'
@@ -68,7 +70,7 @@ export default function DeliverablePanel({
     // Show only docs linked to this specific deliverable via taskKey = definition.key
     const attachedDocs = documents.filter(d => d.taskKey === definition.key)
 
-    const handleGenerate = async () => {
+    const doGenerate = async () => {
         setGenerating(true)
         try {
             await generateDeliverable(customerId, phaseNumber, definition.key)
@@ -76,6 +78,14 @@ export default function DeliverablePanel({
             setShowContent(true)
         } finally {
             setGenerating(false)
+        }
+    }
+
+    const handleGenerate = () => {
+        if (record?.generatedContent) {
+            setConfirmOpen(true)
+        } else {
+            doGenerate()
         }
     }
 
@@ -97,7 +107,7 @@ export default function DeliverablePanel({
             fd.append('taskKey', definition.key)
             await fetch('/api/upload', { method: 'POST', body: fd })
             // Page will revalidate via server action; force a router refresh
-            window.location.reload()
+            router.refresh()
         } finally {
             setUploading(false)
         }
@@ -132,6 +142,16 @@ export default function DeliverablePanel({
     }
 
     return (
+        <>
+        <ConfirmDialog
+            open={confirmOpen}
+            title="Replace Existing Draft?"
+            message="Regenerating will overwrite the current draft content. This cannot be undone."
+            confirmLabel="Regenerate"
+            danger
+            onConfirm={() => { setConfirmOpen(false); doGenerate() }}
+            onCancel={() => setConfirmOpen(false)}
+        />
         <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
             {/* Header row */}
             <div className="flex items-start justify-between gap-4 px-5 py-4">
@@ -195,26 +215,31 @@ export default function DeliverablePanel({
 
             {/* Generated content preview */}
             {showContent && record?.generatedContent && (
-                <div className="border-t border-slate-100 px-5 py-4">
-                    <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-medium text-slate-600">Generated Draft</span>
+                <div className="border-t border-slate-100">
+                    <div className="flex items-center justify-between px-5 py-3 bg-slate-50 border-b border-slate-100">
+                        <div className="flex items-center gap-2">
+                            <FileText className="h-3.5 w-3.5 text-slate-400" />
+                            <span className="text-xs font-semibold text-slate-600">Generated Draft</span>
+                            {record.generatedAt && (
+                                <span className="text-[10px] text-slate-400">
+                                    · generated {new Date(record.generatedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' })}
+                                </span>
+                            )}
+                        </div>
                         <button
                             type="button"
                             aria-label="Close draft preview"
                             onClick={() => setShowContent(false)}
-                            className="text-slate-400 hover:text-slate-600"
+                            className="text-slate-400 hover:text-slate-600 transition-colors"
                         >
                             <X className="h-4 w-4" />
                         </button>
                     </div>
-                    <pre className="text-xs text-slate-700 whitespace-pre-wrap font-mono bg-slate-50 rounded-lg p-4 max-h-96 overflow-y-auto leading-relaxed border border-slate-200">
-                        {record.generatedContent}
-                    </pre>
-                    {record.generatedAt && (
-                        <p className="text-xs text-slate-400 mt-2">
-                            Generated {new Date(record.generatedAt).toLocaleString()}
-                        </p>
-                    )}
+                    <div className="px-5 py-4 max-h-96 overflow-y-auto bg-white">
+                        <div className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
+                            {record.generatedContent}
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -266,5 +291,6 @@ export default function DeliverablePanel({
                 )}
             </div>
         </div>
+        </>
     )
 }

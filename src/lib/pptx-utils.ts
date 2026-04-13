@@ -12,7 +12,7 @@ export async function generateCustomerPptx(data: PptxData): Promise<Buffer> {
     const pptx = new pptxgen();
 
     // 1. Title Slide
-    let slide1 = pptx.addSlide();
+    const slide1 = pptx.addSlide();
     slide1.background = { fill: "F1F5F9" };
     slide1.addText("Strategic AI Roadmap & Readiness Analysis", {
         x: 0.5, y: 1.5, w: "90%", h: 1,
@@ -28,7 +28,7 @@ export async function generateCustomerPptx(data: PptxData): Promise<Buffer> {
     });
 
     // 2. Executive Summary / Roadmap Overview
-    let slide2 = pptx.addSlide();
+    const slide2 = pptx.addSlide();
     slide2.addText("Executive Summary: The AI Journey", { 
         x: 0.5, y: 0.3, w: "90%", h: 0.5, fontSize: 24, bold: true, 
         color: "0F172A"
@@ -59,7 +59,7 @@ export async function generateCustomerPptx(data: PptxData): Promise<Buffer> {
 
     // 3. Readiness Assessment Summary
     if (data.assessment) {
-        let slide3 = pptx.addSlide();
+        const slide3 = pptx.addSlide();
         slide3.addText("Baseline Readiness Assessment", { x: 0.5, y: 0.3, w: "90%", h: 0.5, fontSize: 24, bold: true, color: "0F172A" });
         slide3.addShape(pptx.ShapeType.rect, { x: 0.5, y: 0.8, w: 9, h: 0.01, fill: { color: "CBD5E1" } });
 
@@ -87,7 +87,7 @@ export async function generateCustomerPptx(data: PptxData): Promise<Buffer> {
 
     // 4. Identified AI Use Cases
     if (data.useCases && data.useCases.length > 0) {
-        let slide4 = pptx.addSlide();
+        const slide4 = pptx.addSlide();
         slide4.addText("Prioritized AI Backlog", { x: 0.5, y: 0.3, w: "90%", h: 0.5, fontSize: 24, bold: true, color: "0F172A" });
         slide4.addShape(pptx.ShapeType.rect, { x: 0.5, y: 0.8, w: 9, h: 0.01, fill: { color: "CBD5E1" } });
 
@@ -103,7 +103,7 @@ export async function generateCustomerPptx(data: PptxData): Promise<Buffer> {
     }
 
     // 5. Closing Slide
-    let slideFinal = pptx.addSlide();
+    const slideFinal = pptx.addSlide();
     slideFinal.background = { fill: "0F172A" };
     slideFinal.addText("Next Steps: Accelerating to Phase 3", {
         x: 0.5, y: 2.0, w: "90%", h: 1,

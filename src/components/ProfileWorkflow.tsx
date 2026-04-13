@@ -71,6 +71,18 @@ export default function ProfileWorkflow({ customer, phaseData }: ProfileWorkflow
     const [editingRealizedId, setEditingRealizedId] = useState<string | null>(null)
     const [editedRealizedValue, setEditedRealizedValue] = useState('')
 
+    // Per-phase completion stats — passed to JourneyNavigator for progress indicators
+    const phaseStats = [1, 2, 3, 4, 5].map(phaseNum => {
+        const phaseDef = getPhase(phaseNum)
+        const phaseTasks = phaseData.tasks.filter(t => t.phaseNumber === phaseNum)
+        const phaseDeliverables = phaseData.deliverables.filter(d => d.phaseNumber === phaseNum)
+        const totalTasks = phaseDef?.subtasks.length ?? 0
+        const completedTasks = phaseTasks.filter(t => t.completed).length
+        const totalDeliverables = phaseDef?.deliverables.length ?? 0
+        const completedDeliverables = phaseDeliverables.filter(d => d.status === 'COMPLETED').length
+        return { phaseNum, totalTasks, completedTasks, totalDeliverables, completedDeliverables }
+    })
+
     const handleGlobalGenerate = async (key: string, phase: number) => {
         setGenerating(true)
         try {
@@ -367,9 +379,18 @@ export default function ProfileWorkflow({ customer, phaseData }: ProfileWorkflow
                                     ))}
                                 </div>
                             ) : (
-                                <div className="flex flex-col items-center justify-center p-12 text-center rounded-2xl border border-dashed border-slate-300 bg-slate-50/20">
-                                    <Plus className="h-8 w-8 text-slate-300 mb-4" />
-                                    <p className="text-slate-500 text-sm font-medium">Identify specific AI use cases to build the strategy roadmap.</p>
+                                <div className="flex flex-col items-center justify-center p-12 text-center rounded-2xl border border-dashed border-slate-300 bg-slate-50/30">
+                                    <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center mb-4">
+                                        <Zap className="h-6 w-6 text-emerald-500" />
+                                    </div>
+                                    <h4 className="text-slate-800 font-bold mb-1.5">No use cases yet</h4>
+                                    <p className="text-slate-400 text-sm max-w-sm mb-6">
+                                        Identify AI initiatives to build your strategy roadmap. Add them manually or import from the template library.
+                                    </p>
+                                    <div className="flex items-center gap-3">
+                                        <UseCaseTemplateModal customerId={customer.id} />
+                                        <UseCaseModal customerId={customer.id} />
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -799,6 +820,7 @@ export default function ProfileWorkflow({ customer, phaseData }: ProfileWorkflow
                     currentPhase={customer.currentPhase}
                     selectedPhase={selectedPhase}
                     onPhaseSelect={setSelectedPhase}
+                    phaseStats={phaseStats}
                 />
 
                 <div className="mt-8 pt-8 border-t border-slate-100">

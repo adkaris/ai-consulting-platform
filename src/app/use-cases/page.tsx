@@ -4,13 +4,14 @@ import Link from 'next/link'
 import { Suspense } from 'react'
 import SearchInput from '@/components/SearchInput'
 import UseCaseFilters from '@/components/UseCaseFilters'
+import UseCaseStatusSelect from '@/components/UseCaseStatusSelect'
 
 export default async function UseCasesPage({
     searchParams,
 }: {
-    searchParams: Promise<{ q?: string; priority?: string; sort?: string }>
+    searchParams: Promise<{ q?: string; priority?: string; dept?: string; sort?: string }>
 }) {
-    const { q, priority, sort } = await searchParams
+    const { q, priority, dept, sort } = await searchParams
     const allUseCases = await getAllUseCases()
 
     // Filter by search query
@@ -27,6 +28,11 @@ export default async function UseCasesPage({
         useCases = useCases.filter(uc => uc.priority === priority)
     }
 
+    // Filter by department
+    if (dept && dept !== 'ALL') {
+        useCases = useCases.filter(uc => (uc.department ?? 'General') === dept)
+    }
+
     // Sort
     const moneyROI = (uc: (typeof allUseCases)[0]) =>
         (uc.rois ?? []).filter(r => r.type === 'MONEY').reduce((s, r) => s + r.value, 0)
@@ -40,6 +46,8 @@ export default async function UseCasesPage({
         )
     }
     // default 'date': already ordered by createdAt desc from the action
+
+    const departments = Array.from(new Set(allUseCases.map(uc => uc.department ?? 'General'))).sort()
 
     const totalROI = allUseCases.reduce((sum, uc) =>
         sum + (uc.rois ?? []).filter(r => r.type === 'MONEY').reduce((s, r) => s + r.value, 0), 0)
@@ -73,7 +81,7 @@ export default async function UseCasesPage({
                     </Suspense>
                 </div>
                 <Suspense>
-                    <UseCaseFilters />
+                    <UseCaseFilters departments={departments} />
                 </Suspense>
                 {(q || priority || sort) && (
                     <p className="text-xs text-slate-400 shrink-0 sm:ml-auto">
@@ -147,10 +155,7 @@ export default async function UseCasesPage({
                                             )}
                                         </td>
                                         <td className="px-6 py-5">
-                                            <div className="flex items-center gap-2">
-                                                <div className={`w-2 h-2 rounded-full ${uc.status === 'APPROVED' ? 'bg-emerald-500' : 'bg-slate-300'}`} />
-                                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-tight">{uc.status}</span>
-                                            </div>
+                                            <UseCaseStatusSelect useCaseId={uc.id} currentStatus={uc.status} />
                                         </td>
                                         <td className="px-6 py-5 text-right">
                                             <Link href={`/customers/${uc.customerId}`} className="p-2 text-slate-400 hover:text-blue-600 transition-colors inline-block">

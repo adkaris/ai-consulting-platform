@@ -1,9 +1,11 @@
 import { getCustomers, getAllAssessments, getAllUseCases } from '@/app/actions'
 import { getAssessmentSchema } from '@/app/assessment-actions'
 import MethodologyEditor from '@/components/MethodologyEditor'
+import LlmSettings from '@/components/LlmSettings'
+import ExportDataButton from '@/components/ExportDataButton'
 import {
     Settings, Database, Layers, ShieldCheck, BookOpen,
-    GitBranch, Users, Activity, FileText, CheckCircle
+    GitBranch, Users, Activity, FileText, CheckCircle, Bot, HardDriveDownload
 } from 'lucide-react'
 
 export default async function SettingsPage() {
@@ -37,6 +39,22 @@ export default async function SettingsPage() {
                 <p className="text-slate-500">Configuration, methodology reference, and database overview.</p>
             </div>
 
+            {/* LLM Configuration */}
+            <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="px-8 py-5 border-b border-slate-100 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <Bot className="w-5 h-5 text-indigo-600" />
+                        <h2 className="text-base font-bold text-slate-900">AI / LLM Provider</h2>
+                    </div>
+                    <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-1 rounded-full uppercase tracking-widest">
+                        Intelligence Intake
+                    </span>
+                </div>
+                <div className="p-8">
+                    <LlmSettings />
+                </div>
+            </section>
+
             {/* Platform Info */}
             <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="px-8 py-5 border-b border-slate-100 flex items-center gap-3">
@@ -67,6 +85,7 @@ export default async function SettingsPage() {
                         <Database className="w-5 h-5 text-indigo-600" />
                         <h2 className="text-base font-bold text-slate-900">Database</h2>
                     </div>
+                    <ExportDataButton />
                     <div className="flex items-center gap-2 px-3 py-1 bg-emerald-50 border border-emerald-100 rounded-full">
                         <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                         <span className="text-[11px] font-black text-emerald-700 uppercase tracking-wider">Connected</span>

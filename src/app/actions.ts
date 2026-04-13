@@ -9,6 +9,7 @@ import { convertMarkdownToDocx } from '@/lib/docx-utils'
 import { METHODOLOGY } from '@/lib/methodology'
 import { USE_CASE_TEMPLATES } from '@/lib/use-case-templates'
 import { analyzeMeetingNotes, IntakeResults } from '@/lib/ai-intake'
+import type { LlmConfig } from '@/lib/llm-config'
 import { generateCustomerPptx } from '@/lib/pptx-utils'
 
 export async function createCustomer(formData: FormData) {
@@ -33,6 +34,32 @@ export async function createCustomer(formData: FormData) {
 export async function getCustomers() {
     return await prisma.customer.findMany({
         orderBy: { createdAt: 'desc' }
+    })
+}
+
+export async function getCustomersWithStats() {
+    return await prisma.customer.findMany({
+        include: {
+            assessments: {
+                orderBy: { createdAt: 'desc' },
+                take: 1,
+                select: {
+                    scoreStrategy: true,
+                    scoreData: true,
+                    scoreTech: true,
+                    scoreSecurity: true,
+                    scoreSkills: true,
+                    scoreOps: true,
+                    scoreGovernance: true,
+                    scoreFinancial: true,
+                    createdAt: true,
+                }
+            },
+            useCases: {
+                select: { status: true }
+            }
+        },
+        orderBy: { updatedAt: 'desc' }
     })
 }
 
@@ -437,8 +464,12 @@ export async function importUseCaseTemplate(customerId: string, templateId: stri
 
 // ─── AI Intake ────────────────────────────────────────────────────────────────
 
-export async function processMeetingNotes(customerId: string, notes: string) {
-    return await analyzeMeetingNotes(notes)
+export async function processMeetingNotes(
+    customerId: string,
+    notes: string,
+    llmConfig?: LlmConfig
+) {
+    return await analyzeMeetingNotes(notes, llmConfig)
 }
 
 export async function applyIntakeResults(
@@ -590,4 +621,22 @@ export async function upsertChangeManagementItem(customerId: string, formData: F
 export async function deleteChangeManagementItem(itemId: string, customerId: string) {
     await prisma.changeManagementItem.delete({ where: { id: itemId } })
     revalidatePath(`/customers/${customerId}`)
+}
+
+// ─── Portfolio Data Export ────────────────────────────────────────────────────
+
+export async function exportPortfolioData() {
+    const [customers, assessments, useCases] = await Promise.all([
+        prisma.customer.findMany({ orderBy: { createdAt: 'desc' } }),
+        prisma.assessment.findMany({ orderBy: { completedAt: 'desc' } }),
+        prisma.useCase.findMany({ orderBy: { createdAt: 'desc' } }),
+    ])
+
+    return {
+        exportedAt: new Date().toISOString(),
+        version: '1.0',
+        customers,
+        assessments,
+        useCases,
+    }
 }

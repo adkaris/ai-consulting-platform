@@ -9,12 +9,13 @@ const SORT_OPTIONS = [
     { value: 'priority', label: 'Priority' },
 ]
 
-export default function UseCaseFilters() {
+export default function UseCaseFilters({ departments = [] }: { departments?: string[] }) {
     const router = useRouter()
     const pathname = usePathname()
     const searchParams = useSearchParams()
 
     const activePriority = searchParams.get('priority') ?? 'ALL'
+    const activeDept = searchParams.get('dept') ?? 'ALL'
     const activeSort = searchParams.get('sort') ?? 'date'
 
     const update = (key: string, value: string) => {
@@ -46,6 +47,21 @@ export default function UseCaseFilters() {
                     </button>
                 ))}
             </div>
+
+            {/* Department Filter */}
+            {departments.length > 0 && (
+                <select
+                    value={activeDept}
+                    onChange={(e) => update('dept', e.target.value)}
+                    aria-label="Filter by department"
+                    className="text-xs font-semibold text-slate-600 bg-slate-100 border-0 rounded-xl px-3 py-2 cursor-pointer focus:ring-2 focus:ring-indigo-200 outline-none"
+                >
+                    <option value="ALL">All Depts</option>
+                    {departments.map(d => (
+                        <option key={d} value={d}>{d}</option>
+                    ))}
+                </select>
+            )}
 
             {/* Sort */}
             <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">

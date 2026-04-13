@@ -20,7 +20,7 @@ const navigation = [
     { name: 'Settings', href: '/settings', icon: Settings },
 ]
 
-export default function Sidebar({ className }: { className?: string }) {
+export default function Sidebar({ className, pendingCount = 0 }: { className?: string; pendingCount?: number }) {
     const pathname = usePathname()
 
     return (
@@ -39,6 +39,7 @@ export default function Sidebar({ className }: { className?: string }) {
                 {navigation.map((item) => {
                     const isActive = pathname === item.href || pathname?.startsWith(`${item.href}/`) && item.href !== '/'
                     const Icon = item.icon
+                    const showBadge = item.href === '/action-plan' && pendingCount > 0
 
                     return (
                         <Link
@@ -58,7 +59,12 @@ export default function Sidebar({ className }: { className?: string }) {
                                 )}
                                 aria-hidden="true"
                             />
-                            {item.name}
+                            <span className="flex-1">{item.name}</span>
+                            {showBadge && (
+                                <span className="ml-2 inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 rounded-full text-[10px] font-bold bg-red-500 text-white">
+                                    {pendingCount > 99 ? '99+' : pendingCount}
+                                </span>
+                            )}
                         </Link>
                     )
                 })}

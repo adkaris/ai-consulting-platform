@@ -1,12 +1,14 @@
 'use client'
 
-import React, { useState, use } from 'react'
+import React, { useState, use, useEffect } from 'react'
 import { processMeetingNotes, applyIntakeResults } from '@/app/actions'
 import { IntakeResults } from '@/lib/ai-intake'
-import { 
-    Sparkles, ArrowRight, BrainCircuit, FileText, CheckCircle2, 
+import { loadLlmConfig, PROVIDER_LABELS, type LlmConfig } from '@/lib/llm-config'
+import {
+    Sparkles, ArrowRight, BrainCircuit, FileText, CheckCircle2,
     ChevronLeft, Zap, TrendingUp, AlertCircle, Info, Building2,
-    Upload, FileUp, X, Check, ShieldCheck, Target, BarChart3
+    Upload, FileUp, X, Check, ShieldCheck, Target, BarChart3,
+    Bot, TestTube2,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -19,7 +21,11 @@ export default function AIIntakePage({ params }: { params: Promise<{ id: string 
     const [step, setStep] = useState<'INPUT' | 'ANALYZING' | 'REVIEW' | 'SAVING'>('INPUT')
     const [notes, setNotes] = useState('')
     const [isDragging, setIsDragging] = useState(false)
-    
+
+    // LLM config — loaded from localStorage on mount
+    const [llmConfig, setLlmConfig] = useState<LlmConfig>({ provider: 'mock' })
+    useEffect(() => { setLlmConfig(loadLlmConfig()) }, [])
+
     // Analysis results and approval state
     const [rawResults, setRawResults] = useState<IntakeResults | null>(null)
     const [approvedScores, setApprovedScores] = useState<Record<string, boolean>>({})
@@ -29,7 +35,7 @@ export default function AIIntakePage({ params }: { params: Promise<{ id: string 
         if (!notes.trim()) return
         setStep('ANALYZING')
         try {
-            const data = await processMeetingNotes(customerId, notes)
+            const data = await processMeetingNotes(customerId, notes, llmConfig)
             setRawResults(data)
             
             // Initialize all as approved by default
@@ -201,8 +207,17 @@ export default function AIIntakePage({ params }: { params: Promise<{ id: string 
                                 </div>
                             </div>
 
-                            <div className="mt-8 flex items-center justify-center gap-4 w-full">
+                            <div className="mt-8 flex flex-col items-center gap-4 w-full">
+                                {/* LLM provider indicator */}
+                                <div className="flex items-center gap-2 text-xs text-slate-500">
+                                    {llmConfig.provider === 'mock'
+                                        ? <><TestTube2 className="w-3.5 h-3.5 text-slate-400" /><span>Dev Mode (keyword matching)</span></>
+                                        : <><Bot className="w-3.5 h-3.5 text-indigo-500" /><span className="font-semibold text-indigo-700">{PROVIDER_LABELS[llmConfig.provider]}</span><span className="text-slate-400">— real LLM analysis</span></>
+                                    }
+                                    <Link href="/settings" className="text-indigo-500 hover:underline ml-1">Change</Link>
+                                </div>
                                 <button
+                                    type="button"
                                     onClick={handleAnalyze}
                                     disabled={!notes.trim()}
                                     className="px-10 py-4 bg-indigo-600 hover:bg-slate-900 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-indigo-100 disabled:opacity-50 transition-all active:scale-95 flex items-center gap-3"
@@ -222,14 +237,16 @@ export default function AIIntakePage({ params }: { params: Promise<{ id: string 
                         <div className="w-32 h-32 border-8 border-indigo-50 border-t-indigo-600 rounded-full animate-spin" />
                         <BrainCircuit className="w-12 h-12 absolute inset-0 m-auto text-indigo-600 animate-pulse" />
                     </div>
-                    <h2 className="text-3xl font-black text-slate-900 mb-4 tracking-tight">AI Intelligence Layer Active</h2>
+                    <h2 className="text-3xl font-black text-slate-900 mb-4 tracking-tight">Analysing Notes…</h2>
                     <div className="max-w-md mx-auto space-y-4">
-                        <div className="flex items-center gap-3 text-emerald-600 justify-center">
-                            <CheckCircle2 className="w-4 h-4" />
-                            <span className="text-xs font-bold uppercase tracking-widest">Natural Language Processing...</span>
+                        <div className="flex items-center gap-2 justify-center text-sm text-slate-500">
+                            {llmConfig.provider === 'mock'
+                                ? <><TestTube2 className="w-4 h-4 text-slate-400" /> Dev Mode (keyword matching)</>
+                                : <><Bot className="w-4 h-4 text-indigo-500" /><span className="font-semibold text-indigo-700">{PROVIDER_LABELS[llmConfig.provider]}</span> · real LLM analysis</>
+                            }
                         </div>
                         <p className="text-slate-500 text-sm leading-relaxed">
-                            We are currently mapping semantic tokens in your content to the maturity framework domains and identifying business opportunities.
+                            Mapping semantic content to the 8 maturity domains and identifying AI use cases…
                         </p>
                     </div>
                 </div>
@@ -262,6 +279,7 @@ export default function AIIntakePage({ params }: { params: Promise<{ id: string 
                                 </div>
                             </div>
                             <button
+                                type="button"
                                 onClick={handleApply}
                                 disabled={activeScoresCount === 0 && activeUCsCount === 0}
                                 className="w-full px-8 py-4 bg-emerald-400 text-emerald-950 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-white hover:scale-105 transition-all shadow-xl disabled:opacity-50 flex items-center justify-center gap-2"
@@ -290,7 +308,8 @@ export default function AIIntakePage({ params }: { params: Promise<{ id: string 
                                     </div>
                                 </div>
                                 <div className="flex gap-2">
-                                    <button 
+                                    <button
+                                        type="button"
                                         onClick={() => {
                                             const allOff = Object.keys(approvedScores).reduce((acc, k) => ({...acc, [k]: false}), {})
                                             setApprovedScores(allOff)
@@ -372,7 +391,8 @@ export default function AIIntakePage({ params }: { params: Promise<{ id: string 
                                                 </div>
                                                 <div className="flex gap-2 shrink-0">
                                                     {approvedUseCases[i] ? (
-                                                        <button 
+                                                        <button
+                                                            type="button"
                                                             onClick={() => toggleUseCase(i)}
                                                             className="p-2 bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-100 transition-colors"
                                                             title="Reject Proposal"
@@ -380,7 +400,8 @@ export default function AIIntakePage({ params }: { params: Promise<{ id: string 
                                                             <X className="w-4 h-4" />
                                                         </button>
                                                     ) : (
-                                                        <button 
+                                                        <button
+                                                            type="button"
                                                             onClick={() => toggleUseCase(i)}
                                                             className="p-2 bg-emerald-50 text-emerald-500 rounded-xl hover:bg-emerald-100 transition-colors"
                                                             title="Approve Proposal"

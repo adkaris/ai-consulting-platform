@@ -3,6 +3,15 @@
 import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 
+export async function getAssessmentById(assessmentId: string) {
+    return await prisma.assessment.findUnique({
+        where: { id: assessmentId },
+        include: {
+            customer: { select: { id: true, name: true, industry: true, currentPhase: true } }
+        }
+    })
+}
+
 export async function getAssessmentSchema() {
     return await prisma.assessmentDomain.findMany({
         include: {

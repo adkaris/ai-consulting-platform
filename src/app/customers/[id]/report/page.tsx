@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { generateRecommendations } from '@/lib/ai-advisor'
 import PrintButton from '@/components/PrintButton'
+import PrintSectionControls from '@/components/PrintSectionControls'
 
 export default async function CustomerReport({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params
@@ -55,7 +56,8 @@ export default async function CustomerReport({ params }: { params: Promise<{ id:
                         <h4 className="text-sm font-bold">{customer.name} - Strategy Map</h4>
                     </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-center">
+                    <PrintSectionControls />
                     <PrintButton />
                 </div>
             </div>
@@ -114,7 +116,7 @@ export default async function CustomerReport({ params }: { params: Promise<{ id:
                 <div className="p-12 space-y-12">
 
                     {/* Domain Grid */}
-                    <section>
+                    <section id="report-section-domains">
                         <div className="flex items-center gap-2 mb-8">
                             <div className="w-2 h-6 bg-indigo-600 rounded-full" />
                             <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Technical Domain Maturity</h3>
@@ -147,7 +149,7 @@ export default async function CustomerReport({ params }: { params: Promise<{ id:
 
                     {/* Gap Analysis */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-12 pt-8 border-t border-slate-100">
-                        <section>
+                        <section id="report-section-gaps">
                             <div className="flex items-center gap-2 mb-8">
                                 <div className="w-2 h-6 bg-rose-600 rounded-full" />
                                 <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight text-rose-600">Critical Gaps</h3>
@@ -174,7 +176,7 @@ export default async function CustomerReport({ params }: { params: Promise<{ id:
                             </div>
                         </section>
 
-                        <section>
+                        <section id="report-section-roadmap">
                             <div className="flex items-center gap-2 mb-8">
                                 <div className="w-2 h-6 bg-emerald-600 rounded-full" />
                                 <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight text-emerald-600">Strategic Roadmap</h3>
@@ -207,11 +209,29 @@ export default async function CustomerReport({ params }: { params: Promise<{ id:
                     </div>
 
                     {/* 3. Methodology Appendix */}
-                    <div className="pt-12 mt-12 border-t border-slate-100">
+                    <div id="report-section-appendix" className="pt-12 mt-12 border-t border-slate-100 space-y-4">
                         <div className="grid grid-cols-3 gap-8 text-center text-[9px] font-black uppercase tracking-[0.2em] text-slate-300">
-                            <p>Antigravity AI Consulting Framework v2.0</p>
+                            <p>UniSystems AI Consulting Framework v2.0</p>
                             <p>Proprietary Maturity Matrix</p>
                             <p>Confidential Client Advisor</p>
+                        </div>
+                        {/* Date footer */}
+                        <div className="flex items-center justify-between text-[10px] text-slate-400 pt-4 border-t border-slate-100">
+                            <span>
+                                Report generated:{' '}
+                                <span className="font-bold text-slate-600">
+                                    {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                </span>
+                            </span>
+                            {assessment && (
+                                <span>
+                                    Assessment date:{' '}
+                                    <span className="font-bold text-slate-600">
+                                        {new Date(assessment.completedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                    </span>
+                                </span>
+                            )}
+                            <span className="font-bold text-slate-500">{customer.name}</span>
                         </div>
                     </div>
                 </div>
