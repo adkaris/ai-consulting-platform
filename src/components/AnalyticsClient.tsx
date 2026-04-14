@@ -14,8 +14,15 @@ interface AnalyticsData {
     roiByDepartment: { name: string; value: number }[]
     prioritySpread: { name: string; value: number }[]
     domainAverages: { domain: string; score: number; benchmark: number }[]
-    riskMatrix: { name: string; maturity: number; ambition: number }[]
+    riskMatrix: { name: string; maturity: number; ambition: number; track: string }[]
     roiByStatus: { dept: string; DRAFT: number; APPROVED: number; PILOTING: number; PRODUCTION: number }[]
+    trackDistribution: { name: string; value: number; color: string }[]
+}
+
+const TRACK_COLORS: Record<string, string> = {
+    GENERAL_AI: '#3b82f6',
+    COPILOT:    '#7c3aed',
+    MIXED:      '#10b981',
 }
 
 const TOOLTIP_STYLE = { borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }
@@ -64,7 +71,7 @@ export default function AnalyticsClient({ data }: { data: AnalyticsData }) {
                 </div>
             </div>
 
-            {/* 3. Portfolio Risk Matrix — maturity vs ambition */}
+            {/* 3. Portfolio Risk Matrix — maturity vs ambition, coloured by track */}
             <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
                 <h3 className="text-md font-bold text-slate-900 mb-1 flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-rose-500" />
@@ -83,7 +90,6 @@ export default function AnalyticsClient({ data }: { data: AnalyticsData }) {
                             <Tooltip
                                 cursor={{ strokeDasharray: '3 3' }}
                                 contentStyle={TOOLTIP_STYLE}
-                                formatter={(value, name) => [value, name === 'maturity' ? 'Maturity' : 'Ambition']}
                                 content={({ active, payload }) => {
                                     if (!active || !payload?.length) return null
                                     const d = payload[0].payload
@@ -96,11 +102,48 @@ export default function AnalyticsClient({ data }: { data: AnalyticsData }) {
                                     )
                                 }}
                             />
-                            <Scatter data={data.riskMatrix} fill="#4f46e5" fillOpacity={0.75} />
+                            <Legend wrapperStyle={{ fontSize: 11 }} />
+                            <Scatter name="General AI" data={data.riskMatrix.filter(d => d.track === 'GENERAL_AI')} fill={TRACK_COLORS.GENERAL_AI} fillOpacity={0.8} />
+                            <Scatter name="Copilot"    data={data.riskMatrix.filter(d => d.track === 'COPILOT')}    fill={TRACK_COLORS.COPILOT}    fillOpacity={0.8} />
+                            <Scatter name="Mixed"      data={data.riskMatrix.filter(d => d.track === 'MIXED')}      fill={TRACK_COLORS.MIXED}      fillOpacity={0.8} />
                         </ScatterChart>
                     </ResponsiveContainer>
                 </div>
             </div>
+
+            {/* 3b. Track Distribution pie */}
+            {data.trackDistribution.length > 0 && (
+                <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+                    <h3 className="text-md font-bold text-slate-900 mb-1 flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-blue-500" />
+                        Engagement Track Distribution
+                    </h3>
+                    <p className="text-xs text-slate-400 mb-5">Customers by AI engagement type</p>
+                    <div className="h-[300px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie
+                                    data={data.trackDistribution}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={65}
+                                    outerRadius={100}
+                                    paddingAngle={4}
+                                    dataKey="value"
+                                    label={({ name, value }: { name?: string; value?: number }) => `${name ?? ''} (${value ?? 0})`}
+                                    labelLine={false}
+                                >
+                                    {data.trackDistribution.map((entry, index) => (
+                                        <Cell key={`track-${index}`} fill={entry.color} />
+                                    ))}
+                                </Pie>
+                                <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v: number | undefined) => [`${v ?? 0} customer${(v ?? 0) !== 1 ? 's' : ''}`, '']} />
+                                <Legend wrapperStyle={{ fontSize: 11 }} />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+            )}
 
             {/* 4. Stacked ROI by Department & Status */}
             {data.roiByStatus.length > 0 ? (
@@ -116,7 +159,7 @@ export default function AnalyticsClient({ data }: { data: AnalyticsData }) {
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                                 <XAxis dataKey="dept" tick={{ fill: '#64748b', fontSize: 10, fontWeight: 600 }} axisLine={false} />
                                 <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} tickFormatter={(v) => `€${(v / 1000).toFixed(0)}k`} />
-                                <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v: number) => [`€${v.toLocaleString()}`, '']} />
+                                <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v: number | undefined) => [`€${(v ?? 0).toLocaleString()}`, '']} />
                                 <Legend wrapperStyle={{ fontSize: 11 }} />
                                 <Bar dataKey="DRAFT"      stackId="a" fill="#cbd5e1" radius={[0, 0, 0, 0]} name="Draft" />
                                 <Bar dataKey="APPROVED"   stackId="a" fill="#10b981" name="Approved" />
@@ -171,14 +214,14 @@ export default function AnalyticsClient({ data }: { data: AnalyticsData }) {
                                 outerRadius={100}
                                 paddingAngle={4}
                                 dataKey="value"
-                                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                label={({ name, percent }: { name?: string; percent?: number }) => `${name ?? ''} ${((percent ?? 0) * 100).toFixed(0)}%`}
                                 labelLine={false}
                             >
                                 {data.roiByDepartment.map((_, index) => (
                                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                 ))}
                             </Pie>
-                            <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v: number) => [`€${v.toLocaleString()}`, 'Est. ROI']} />
+                            <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v: number | undefined) => [`€${(v ?? 0).toLocaleString()}`, 'Est. ROI']} />
                         </PieChart>
                     </ResponsiveContainer>
                 </div>

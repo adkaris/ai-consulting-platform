@@ -1,5 +1,5 @@
 import { getAllUseCases } from '@/app/actions'
-import { Briefcase, Zap, Euro, Building2 } from 'lucide-react'
+import { Briefcase, Zap, Euro, Building2, Bot, MonitorSmartphone } from 'lucide-react'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import SearchInput from '@/components/SearchInput'
@@ -9,9 +9,9 @@ import UseCaseStatusSelect from '@/components/UseCaseStatusSelect'
 export default async function UseCasesPage({
     searchParams,
 }: {
-    searchParams: Promise<{ q?: string; priority?: string; dept?: string; sort?: string }>
+    searchParams: Promise<{ q?: string; priority?: string; dept?: string; sort?: string; type?: string }>
 }) {
-    const { q, priority, dept, sort } = await searchParams
+    const { q, priority, dept, sort, type } = await searchParams
     const allUseCases = await getAllUseCases()
 
     // Filter by search query
@@ -31,6 +31,11 @@ export default async function UseCasesPage({
     // Filter by department
     if (dept && dept !== 'ALL') {
         useCases = useCases.filter(uc => (uc.department ?? 'General') === dept)
+    }
+
+    // Filter by use case type
+    if (type && type !== 'ALL') {
+        useCases = useCases.filter(uc => (uc.useCaseType ?? 'GENERAL_AI') === type)
     }
 
     // Sort
@@ -110,8 +115,19 @@ export default async function UseCasesPage({
                                 useCases.map((uc) => (
                                     <tr key={uc.id} className="hover:bg-slate-50/50 transition-colors group">
                                         <td className="px-6 py-5">
-                                            <p className="text-sm font-bold text-slate-900 leading-none">{uc.title}</p>
-                                            {uc.description && <p className="text-xs text-slate-500 mt-1.5 line-clamp-1">{uc.description}</p>}
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <p className="text-sm font-bold text-slate-900 leading-none">{uc.title}</p>
+                                                {uc.useCaseType === 'COPILOT' ? (
+                                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-black bg-violet-50 text-violet-700 border border-violet-100 uppercase tracking-wide shrink-0">
+                                                        <MonitorSmartphone className="w-2.5 h-2.5" /> Copilot
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-black bg-blue-50 text-blue-700 border border-blue-100 uppercase tracking-wide shrink-0">
+                                                        <Bot className="w-2.5 h-2.5" /> AI
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {uc.description && <p className="text-xs text-slate-500 mt-1 line-clamp-1">{uc.description}</p>}
                                         </td>
                                         <td className="px-6 py-5">
                                             <Link href={`/customers/${uc.customerId}`} className="flex items-center text-sm font-medium text-blue-600 hover:underline">

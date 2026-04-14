@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { X, Plus, Building2, Users, Zap } from 'lucide-react'
+import { X, Plus, Building2, Users, Zap, Bot, MonitorSmartphone, Layers } from 'lucide-react'
 import { createCustomer } from '@/app/actions'
 
 const AMBITION_LABELS: Record<number, string> = {
@@ -15,10 +15,58 @@ const AMBITION_LABELS: Record<number, string> = {
 
 const EMPLOYEE_OPTIONS = ['1–50', '50–200', '200–1,000', '1,000–5,000', '5,000+']
 
+const TRACKS = [
+  {
+    value: 'GENERAL_AI',
+    label: 'General AI',
+    icon: Bot,
+    description: 'Custom AI models, data pipelines, LLMs & agents',
+    color: 'blue',
+  },
+  {
+    value: 'COPILOT',
+    label: 'Microsoft Copilot',
+    icon: MonitorSmartphone,
+    description: 'M365 Copilot, Copilot Studio & Teams AI features',
+    color: 'violet',
+  },
+  {
+    value: 'MIXED',
+    label: 'Mixed',
+    icon: Layers,
+    description: 'Both General AI and Microsoft Copilot initiatives',
+    color: 'emerald',
+  },
+] as const
+
+type TrackValue = 'GENERAL_AI' | 'COPILOT' | 'MIXED'
+
+const TRACK_STYLES: Record<TrackValue, { selected: string; hover: string; icon: string; dot: string }> = {
+  GENERAL_AI: {
+    selected: 'border-blue-500 bg-blue-50 ring-2 ring-blue-500/20',
+    hover: 'hover:border-blue-300 hover:bg-blue-50/50',
+    icon: 'bg-blue-100 text-blue-600',
+    dot: 'bg-blue-500',
+  },
+  COPILOT: {
+    selected: 'border-violet-500 bg-violet-50 ring-2 ring-violet-500/20',
+    hover: 'hover:border-violet-300 hover:bg-violet-50/50',
+    icon: 'bg-violet-100 text-violet-600',
+    dot: 'bg-violet-500',
+  },
+  MIXED: {
+    selected: 'border-emerald-500 bg-emerald-50 ring-2 ring-emerald-500/20',
+    hover: 'hover:border-emerald-300 hover:bg-emerald-50/50',
+    icon: 'bg-emerald-100 text-emerald-600',
+    dot: 'bg-emerald-500',
+  },
+}
+
 export default function NewCustomerModal() {
   const [isOpen, setIsOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [ambition, setAmbition] = useState(3)
+  const [aiTrack, setAiTrack] = useState<TrackValue>('GENERAL_AI')
   const router = useRouter()
   const formRef = useRef<HTMLFormElement>(null)
 
@@ -26,11 +74,13 @@ export default function NewCustomerModal() {
     e.preventDefault()
     const formData = new FormData(e.currentTarget)
     formData.set('ambitionLevel', String(ambition))
+    formData.set('aiTrack', aiTrack)
     startTransition(async () => {
       await createCustomer(formData)
       setIsOpen(false)
       formRef.current?.reset()
       setAmbition(3)
+      setAiTrack('GENERAL_AI')
       router.refresh()
     })
   }
@@ -94,6 +144,45 @@ export default function NewCustomerModal() {
                   placeholder="e.g. ACME Corporation"
                   className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                 />
+              </div>
+
+              {/* Engagement Type */}
+              <div>
+                <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-2">
+                  Engagement Type <span className="text-rose-500">*</span>
+                </label>
+                <div className="grid grid-cols-3 gap-2.5">
+                  {TRACKS.map(track => {
+                    const Icon = track.icon
+                    const styles = TRACK_STYLES[track.value]
+                    const isSelected = aiTrack === track.value
+                    return (
+                      <button
+                        key={track.value}
+                        type="button"
+                        onClick={() => setAiTrack(track.value)}
+                        className={`relative flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all text-left cursor-pointer ${
+                          isSelected
+                            ? styles.selected
+                            : `border-slate-200 bg-white ${styles.hover}`
+                        }`}
+                      >
+                        {isSelected && (
+                          <span className={`absolute top-2 right-2 w-2 h-2 rounded-full ${styles.dot}`} />
+                        )}
+                        <span className={`p-2 rounded-lg ${styles.icon}`}>
+                          <Icon className="w-4 h-4" />
+                        </span>
+                        <span className="text-xs font-black text-slate-800 text-center leading-tight">
+                          {track.label}
+                        </span>
+                        <span className="text-[10px] text-slate-500 text-center leading-tight">
+                          {track.description}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
 
               {/* Industry + Employees */}

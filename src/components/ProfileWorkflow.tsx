@@ -305,7 +305,7 @@ export default function ProfileWorkflow({ customer, phaseData }: ProfileWorkflow
                                 </div>
                                 <div className="flex items-center gap-3">
                                     <UseCaseTemplateModal customerId={customer.id} />
-                                    <UseCaseModal customerId={customer.id} />
+                                    <UseCaseModal customerId={customer.id} customerTrack={customer.aiTrack} />
                                 </div>
                             </div>
 
@@ -389,7 +389,7 @@ export default function ProfileWorkflow({ customer, phaseData }: ProfileWorkflow
                                     </p>
                                     <div className="flex items-center gap-3">
                                         <UseCaseTemplateModal customerId={customer.id} />
-                                        <UseCaseModal customerId={customer.id} />
+                                        <UseCaseModal customerId={customer.id} customerTrack={customer.aiTrack} />
                                     </div>
                                 </div>
                             )}

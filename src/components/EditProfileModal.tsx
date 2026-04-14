@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { X, Building2, Save } from 'lucide-react'
+import { X, Building2, Save, Bot, MonitorSmartphone, Layers } from 'lucide-react'
 import { updateCustomer } from '@/app/actions'
 
 interface Customer {
@@ -10,16 +10,46 @@ interface Customer {
     industry: string | null
     employees: string | null
     ambitionLevel: number | null
+    aiTrack?: string | null
 }
+
+const TRACK_OPTIONS = [
+    {
+        value: 'GENERAL_AI',
+        label: 'General AI',
+        desc: 'Full 8-domain AI readiness',
+        icon: <Bot className="w-4 h-4" />,
+        colors: 'border-blue-200 bg-blue-50 text-blue-700',
+        activeRing: 'ring-2 ring-blue-500',
+    },
+    {
+        value: 'COPILOT',
+        label: 'Microsoft Copilot',
+        desc: 'Copilot-focused readiness',
+        icon: <MonitorSmartphone className="w-4 h-4" />,
+        colors: 'border-violet-200 bg-violet-50 text-violet-700',
+        activeRing: 'ring-2 ring-violet-500',
+    },
+    {
+        value: 'MIXED',
+        label: 'Mixed',
+        desc: 'Both AI + Copilot tracks',
+        icon: <Layers className="w-4 h-4" />,
+        colors: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+        activeRing: 'ring-2 ring-emerald-500',
+    },
+]
 
 export default function EditProfileModal({ customer }: { customer: Customer }) {
     const [isOpen, setIsOpen] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [selectedTrack, setSelectedTrack] = useState(customer.aiTrack ?? 'GENERAL_AI')
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
         setIsSubmitting(true)
         const formData = new FormData(e.currentTarget)
+        formData.set('aiTrack', selectedTrack)
         try {
             await updateCustomer(customer.id, formData)
             setIsOpen(false)
@@ -59,6 +89,7 @@ export default function EditProfileModal({ customer }: { customer: Customer }) {
                     </div>
                     <button
                         onClick={() => setIsOpen(false)}
+                        aria-label="Close"
                         className="p-2 hover:bg-white rounded-full transition-colors border border-transparent hover:border-slate-200"
                     >
                         <X className="w-5 h-5 text-slate-400" />
@@ -90,8 +121,9 @@ export default function EditProfileModal({ customer }: { customer: Customer }) {
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                            <label className="text-sm font-semibold text-slate-700 ml-1">Employees</label>
+                            <label htmlFor="edit-employees" className="text-sm font-semibold text-slate-700 ml-1">Employees</label>
                             <select
+                                id="edit-employees"
                                 name="employees"
                                 defaultValue={customer.employees ?? ''}
                                 className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all bg-white text-sm cursor-pointer"
@@ -106,8 +138,9 @@ export default function EditProfileModal({ customer }: { customer: Customer }) {
                         </div>
 
                         <div className="space-y-1.5">
-                            <label className="text-sm font-semibold text-slate-700 ml-1">AI Ambition Level</label>
+                            <label htmlFor="edit-ambition" className="text-sm font-semibold text-slate-700 ml-1">AI Ambition Level</label>
                             <select
+                                id="edit-ambition"
                                 name="ambitionLevel"
                                 defaultValue={customer.ambitionLevel ?? ''}
                                 className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all bg-white text-sm cursor-pointer"
@@ -120,6 +153,30 @@ export default function EditProfileModal({ customer }: { customer: Customer }) {
                                 <option value="5">5 – AI-First</option>
                             </select>
                         </div>
+                    </div>
+
+                    {/* Engagement Track */}
+                    <div className="space-y-2">
+                        <label className="text-sm font-semibold text-slate-700 ml-1">Engagement Track</label>
+                        <div className="grid grid-cols-3 gap-2">
+                            {TRACK_OPTIONS.map(opt => (
+                                <button
+                                    key={opt.value}
+                                    type="button"
+                                    onClick={() => setSelectedTrack(opt.value)}
+                                    className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border text-center transition-all ${opt.colors} ${selectedTrack === opt.value ? opt.activeRing : 'opacity-60 hover:opacity-90'}`}
+                                >
+                                    {opt.icon}
+                                    <span className="text-[11px] font-black leading-tight">{opt.label}</span>
+                                    <span className="text-[9px] opacity-70 leading-tight">{opt.desc}</span>
+                                </button>
+                            ))}
+                        </div>
+                        {selectedTrack !== (customer.aiTrack ?? 'GENERAL_AI') && (
+                            <p className="text-[10px] text-amber-600 font-semibold ml-1">
+                                Changing track will affect which assessment types are available.
+                            </p>
+                        )}
                     </div>
 
                     <div className="pt-4 flex gap-3">

@@ -3,6 +3,11 @@
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 
 const PRIORITIES = ['ALL', 'HIGH', 'MEDIUM', 'LOW'] as const
+const TYPE_OPTIONS = [
+    { value: 'ALL', label: 'All Types' },
+    { value: 'GENERAL_AI', label: 'General AI' },
+    { value: 'COPILOT', label: 'Copilot' },
+] as const
 const SORT_OPTIONS = [
     { value: 'date', label: 'Newest' },
     { value: 'roi', label: 'Highest ROI' },
@@ -17,6 +22,7 @@ export default function UseCaseFilters({ departments = [] }: { departments?: str
     const activePriority = searchParams.get('priority') ?? 'ALL'
     const activeDept = searchParams.get('dept') ?? 'ALL'
     const activeSort = searchParams.get('sort') ?? 'date'
+    const activeType = searchParams.get('type') ?? 'ALL'
 
     const update = (key: string, value: string) => {
         const params = new URLSearchParams(searchParams.toString())
@@ -62,6 +68,24 @@ export default function UseCaseFilters({ departments = [] }: { departments?: str
                     ))}
                 </select>
             )}
+
+            {/* Type Filter */}
+            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+                {TYPE_OPTIONS.map(t => (
+                    <button
+                        type="button"
+                        key={t.value}
+                        onClick={() => update('type', t.value)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                            activeType === t.value
+                                ? 'bg-white shadow-sm text-slate-900'
+                                : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                    >
+                        {t.label}
+                    </button>
+                ))}
+            </div>
 
             {/* Sort */}
             <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">

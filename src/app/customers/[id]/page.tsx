@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import {
   Building2, Calendar, Activity, BrainCircuit,
-  AlertTriangle, FileCheck
+  AlertTriangle, FileCheck, Bot, MonitorSmartphone, Layers
 } from 'lucide-react'
 import ProfileWorkflow from '@/components/ProfileWorkflow'
 import EditProfileModal from '@/components/EditProfileModal'
@@ -18,6 +18,24 @@ const PHASE_NAMES = [
   'Change Management',
   'Value Realization',
 ]
+
+const TRACK_BADGE: Record<string, { label: string; icon: React.ReactNode; className: string }> = {
+  GENERAL_AI: {
+    label: 'General AI',
+    icon: <Bot className="w-3 h-3" />,
+    className: 'bg-blue-50 text-blue-700 border-blue-100',
+  },
+  COPILOT: {
+    label: 'Microsoft Copilot',
+    icon: <MonitorSmartphone className="w-3 h-3" />,
+    className: 'bg-violet-50 text-violet-700 border-violet-100',
+  },
+  MIXED: {
+    label: 'Mixed Track',
+    icon: <Layers className="w-3 h-3" />,
+    className: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+  },
+}
 
 function formatTimeAgo(date: Date | string): string {
   const days = Math.floor((Date.now() - new Date(date).getTime()) / 86_400_000)
@@ -37,6 +55,7 @@ export default async function CustomerProfile({ params }: { params: Promise<{ id
       where: { id },
       include: {
         assessments: { orderBy: { completedAt: 'desc' } },
+        copilotAssessments: { orderBy: { completedAt: 'desc' } },
         useCases: { orderBy: { createdAt: 'desc' }, include: { rois: true } },
         changeItems: { orderBy: { createdAt: 'asc' } },
       }
@@ -67,13 +86,30 @@ export default async function CustomerProfile({ params }: { params: Promise<{ id
     : maturity < 3.5 ? 'text-amber-600'
     : 'text-emerald-600'
 
+  // ── Copilot maturity from latest CopilotAssessment ──────────────────────────
+  const latestCopilotAssessment = customer.copilotAssessments?.[0] ?? null
+  const copilotDomainScores = latestCopilotAssessment ? [
+    latestCopilotAssessment.scoreStrategy,
+    latestCopilotAssessment.scoreM365,
+    latestCopilotAssessment.scoreContent,
+    latestCopilotAssessment.scoreSecurity,
+    latestCopilotAssessment.scoreIdentity,
+    latestCopilotAssessment.scoreAdoption,
+    latestCopilotAssessment.scoreUseCases,
+    latestCopilotAssessment.scoreGovernance,
+  ].filter((s): s is number => s != null) : []
+  const copilotMaturity = copilotDomainScores.length > 0
+    ? copilotDomainScores.reduce((a, b) => a + b, 0) / copilotDomainScores.length
+    : null
+
   // ── Use case summary ────────────────────────────────────────────────────────
   const ucTotal = customer.useCases.length
   const ucLive = customer.useCases.filter(u => u.status === 'PILOTING' || u.status === 'PRODUCTION').length
 
   // ── Health banner conditions ────────────────────────────────────────────────
-  const daysSinceAssessment = latestAssessment
-    ? Math.floor((Date.now() - new Date(latestAssessment.createdAt).getTime()) / 86_400_000)
+  const mostRecentAssessment = latestAssessment ?? latestCopilotAssessment
+  const daysSinceAssessment = mostRecentAssessment
+    ? Math.floor((Date.now() - new Date(mostRecentAssessment.createdAt).getTime()) / 86_400_000)
     : null
   const assessmentStale = daysSinceAssessment !== null && daysSinceAssessment > 30
   const allUCsDraft = ucTotal > 0 && customer.useCases.every(u => u.status === 'DRAFT')
@@ -139,6 +175,17 @@ export default async function CustomerProfile({ params }: { params: Promise<{ id
                   {customer.industry || 'General Tech'}
                 </span>
                 <span className="text-slate-300">·</span>
+                {/* Track badge */}
+                {customer.aiTrack && TRACK_BADGE[customer.aiTrack] && (() => {
+                  const badge = TRACK_BADGE[customer.aiTrack]
+                  return (
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black border uppercase tracking-wider ${badge.className}`}>
+                      {badge.icon}
+                      {badge.label}
+                    </span>
+                  )
+                })()}
+                <span className="text-slate-300">·</span>
                 <span className="flex items-center gap-1.5">
                   <Calendar className="w-3.5 h-3.5" />
                   Added {new Date(customer.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
@@ -163,10 +210,20 @@ export default async function CustomerProfile({ params }: { params: Promise<{ id
 
           {/* Right: maturity, use cases, assessment date */}
           <div className="flex items-start gap-5 shrink-0">
-            {maturity !== null && (
+            {/* General AI maturity (shown for GENERAL_AI and MIXED) */}
+            {maturity !== null && customer.aiTrack !== 'COPILOT' && (
               <div className="text-center">
                 <p className={`text-2xl font-black leading-none ${maturityColor}`}>{maturity.toFixed(1)}</p>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mt-1">Maturity / 5</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mt-1">AI Maturity / 5</p>
+              </div>
+            )}
+            {/* Copilot maturity (shown for COPILOT and MIXED) */}
+            {copilotMaturity !== null && customer.aiTrack !== 'GENERAL_AI' && (
+              <div className="text-center">
+                <p className={`text-2xl font-black leading-none ${
+                  copilotMaturity < 2.5 ? 'text-rose-600' : copilotMaturity < 3.5 ? 'text-amber-600' : 'text-violet-600'
+                }`}>{copilotMaturity.toFixed(1)}</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mt-1">Copilot / 5</p>
               </div>
             )}
             {ucTotal > 0 && (
@@ -179,10 +236,12 @@ export default async function CustomerProfile({ params }: { params: Promise<{ id
               </div>
             )}
             <div className="text-right">
-              {latestAssessment ? (
+              {(latestAssessment || latestCopilotAssessment) ? (
                 <>
                   <p className="text-xs font-bold text-slate-600">Last assessed</p>
-                  <p className="text-xs text-slate-400 mt-0.5">{formatTimeAgo(latestAssessment.createdAt)}</p>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    {formatTimeAgo((latestAssessment ?? latestCopilotAssessment)!.createdAt)}
+                  </p>
                   {assessmentStale && (
                     <p className="text-[10px] text-amber-600 font-bold mt-0.5">Stale</p>
                   )}

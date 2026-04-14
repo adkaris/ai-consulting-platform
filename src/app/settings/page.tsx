@@ -1,19 +1,20 @@
 import { getCustomers, getAllAssessments, getAllUseCases } from '@/app/actions'
-import { getAssessmentSchema } from '@/app/assessment-actions'
+import { getAssessmentSchema, getCopilotAssessmentSchema } from '@/app/assessment-actions'
 import MethodologyEditor from '@/components/MethodologyEditor'
 import LlmSettings from '@/components/LlmSettings'
 import ExportDataButton from '@/components/ExportDataButton'
 import {
     Settings, Database, Layers, ShieldCheck, BookOpen,
-    GitBranch, Users, Activity, FileText, CheckCircle, Bot, HardDriveDownload
+    GitBranch, Users, Activity, FileText, CheckCircle, Bot, HardDriveDownload, MonitorSmartphone
 } from 'lucide-react'
 
 export default async function SettingsPage() {
-    const [customers, assessments, useCases, assessmentSchema] = await Promise.all([
+    const [customers, assessments, useCases, assessmentSchema, copilotSchema] = await Promise.all([
         getCustomers(),
         getAllAssessments(),
         getAllUseCases(),
         getAssessmentSchema(),
+        getCopilotAssessmentSchema(),
     ])
 
     const dbStats = [
@@ -134,14 +135,41 @@ export default async function SettingsPage() {
                 </div>
             </section>
 
-            {/* Assessment Domains Reference & Editor */}
+            {/* Assessment Question Bank — General AI */}
             <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="px-8 py-5 border-b border-slate-100 flex items-center gap-3">
-                    <Layers className="w-5 h-5 text-indigo-600" />
-                    <h2 className="text-base font-bold text-slate-900">Maturity Assessment Methodology</h2>
+                <div className="px-8 py-5 border-b border-slate-100 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <Layers className="w-5 h-5 text-indigo-600" />
+                        <h2 className="text-base font-bold text-slate-900">General AI — Assessment Question Bank</h2>
+                    </div>
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black bg-blue-50 text-blue-700 border border-blue-100 uppercase tracking-widest">
+                        <Bot className="w-3 h-3" /> General AI Track
+                    </span>
                 </div>
                 <div className="p-8">
+                    <p className="text-sm text-slate-500 mb-6">
+                        Questions used in the <strong>General AI Readiness Assessment</strong> wizard — 8 domains covering strategy, data, technology, security, skills, operations, governance, and financial readiness.
+                    </p>
                     <MethodologyEditor initialDomains={assessmentSchema as any} />
+                </div>
+            </section>
+
+            {/* Assessment Question Bank — Microsoft Copilot */}
+            <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="px-8 py-5 border-b border-slate-100 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <MonitorSmartphone className="w-5 h-5 text-violet-600" />
+                        <h2 className="text-base font-bold text-slate-900">Microsoft Copilot — Assessment Question Bank</h2>
+                    </div>
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black bg-violet-50 text-violet-700 border border-violet-100 uppercase tracking-widest">
+                        <MonitorSmartphone className="w-3 h-3" /> Copilot Track
+                    </span>
+                </div>
+                <div className="p-8">
+                    <p className="text-sm text-slate-500 mb-6">
+                        Questions used in the <strong>Microsoft Copilot Readiness Assessment</strong> wizard — 8 Copilot-specific domains covering M365 foundation, identity, content governance, security, adoption, use cases, and Copilot governance.
+                    </p>
+                    <MethodologyEditor initialDomains={copilotSchema as any} />
                 </div>
             </section>
 

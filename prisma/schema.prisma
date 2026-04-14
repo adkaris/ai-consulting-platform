@@ -17,15 +17,17 @@ model Customer {
   employees      String?      // e.g. "100-500"
   ambitionLevel  Int?         // 1-5
   currentPhase   Int          @default(1) // 1 to 5
+  aiTrack        String       @default("GENERAL_AI") // GENERAL_AI | COPILOT | MIXED
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
-  assessments       Assessment[]
-  useCases          UseCase[]
-  phaseTasks        PhaseTask[]
-  deliverables      Deliverable[]
-  documents         Document[]
-  changeItems       ChangeManagementItem[]
+  assessments         Assessment[]
+  copilotAssessments  CopilotAssessment[]
+  useCases            UseCase[]
+  phaseTasks          PhaseTask[]
+  deliverables        Deliverable[]
+  documents           Document[]
+  changeItems         ChangeManagementItem[]
 }
 
 model Assessment {
@@ -72,6 +74,7 @@ model UseCase {
   // Value Realization (Phase 5)
   realizedValue       Float?    // actual captured value to date
 
+  useCaseType         String        @default("GENERAL_AI") // GENERAL_AI | COPILOT
   phase               Int           @default(2)
   status              String        @default("DRAFT") // APPROVED, PILOTING, PRODUCTION
 
@@ -156,13 +159,34 @@ model ChangeManagementItem {
   updatedAt   DateTime @updatedAt
 }
 
+model CopilotAssessment {
+  id              String    @id @default(cuid())
+  customerId      String
+  customer        Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  // 8 Copilot-specific domain scores (1–5)
+  scoreStrategy   Float?    // CP1: Copilot Strategy & Vision
+  scoreM365       Float?    // CP2: Microsoft 365 Foundation
+  scoreContent    Float?    // CP3: Content & Data Governance
+  scoreSecurity   Float?    // CP4: Security & Compliance Readiness
+  scoreIdentity   Float?    // CP5: Identity & Access Management
+  scoreAdoption   Float?    // CP6: User Adoption & Change Management
+  scoreUseCases   Float?    // CP7: Use Case Identification & Value
+  scoreGovernance Float?    // CP8: Copilot Governance & Acceptable Use
+
+  status          String    @default("COMPLETED")
+  completedAt     DateTime  @default(now())
+  createdAt       DateTime  @default(now())
+}
+
 model AssessmentDomain {
   id           String               @id @default(cuid())
   name         String
   description  String?
   weight       Float                @default(1.0)
+  trackType    String               @default("GENERAL") // GENERAL | COPILOT
   questions    AssessmentQuestion[]
-  
+
   @@unique([name])
 }
 

@@ -84,7 +84,7 @@ export default async function AnalyticsPage() {
         benchmark: BENCHMARKS[key] ?? 3.0,
     }))
 
-    // 5. Portfolio risk matrix: maturity vs ambition per customer
+    // 5. Portfolio risk matrix: maturity vs ambition per customer (coloured by track)
     const riskMatrix = customers
         .map(c => {
             const latest = assessments
@@ -93,10 +93,22 @@ export default async function AnalyticsPage() {
             if (!latest) return null
             const scores = [latest.scoreStrategy, latest.scoreData, latest.scoreTech, latest.scoreSecurity,
                 latest.scoreSkills, latest.scoreOps, latest.scoreGovernance, latest.scoreFinancial]
-            const maturity = parseFloat((scores.reduce((s, v) => s + (v ?? 0), 0) / scores.length).toFixed(1))
-            return { name: c.name, maturity, ambition: c.ambitionLevel ?? 3 }
+            const maturity = parseFloat((scores.reduce((s: number, v) => s + (v ?? 0), 0) / scores.length).toFixed(1))
+            return { name: c.name, maturity, ambition: c.ambitionLevel ?? 3, track: c.aiTrack ?? 'GENERAL_AI' }
         })
-        .filter(Boolean) as { name: string; maturity: number; ambition: number }[]
+        .filter(Boolean) as { name: string; maturity: number; ambition: number; track: string }[]
+
+    // 7. Track distribution
+    const trackCounts: Record<string, number> = { GENERAL_AI: 0, COPILOT: 0, MIXED: 0 }
+    customers.forEach(c => {
+        const t = c.aiTrack ?? 'GENERAL_AI'
+        trackCounts[t] = (trackCounts[t] ?? 0) + 1
+    })
+    const trackDistribution = [
+        { name: 'General AI',      value: trackCounts.GENERAL_AI, color: '#3b82f6' },
+        { name: 'Microsoft Copilot', value: trackCounts.COPILOT,  color: '#7c3aed' },
+        { name: 'Mixed',           value: trackCounts.MIXED,      color: '#10b981' },
+    ].filter(t => t.value > 0)
 
     // 6. Stacked ROI by status (use money ROI values)
     const deptStatusROI: Record<string, Record<string, number>> = {}
@@ -122,6 +134,7 @@ export default async function AnalyticsPage() {
         domainAverages,
         riskMatrix,
         roiByStatus,
+        trackDistribution,
     }
 
     return (

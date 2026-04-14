@@ -69,9 +69,9 @@ export default function AssessmentRadarChart({ domainScores }: Props) {
                         strokeWidth={2}
                     />
                     <Tooltip
-                        formatter={(value: number, name: string) => [
-                            `${value.toFixed(1)} / 5.0`,
-                            name,
+                        formatter={(value: number | undefined, name: string | undefined) => [
+                            `${(value ?? 0).toFixed(1)} / 5.0`,
+                            name ?? '',
                         ]}
                         contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}
                     />

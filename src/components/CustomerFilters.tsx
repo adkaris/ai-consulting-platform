@@ -19,6 +19,13 @@ const SORT_OPTIONS = [
   { val: 'phase-desc', label: 'Phase ↓' },
 ]
 
+const TRACK_OPTIONS = [
+  { val: '', label: 'All' },
+  { val: 'GENERAL_AI', label: 'General AI' },
+  { val: 'COPILOT', label: 'Copilot' },
+  { val: 'MIXED', label: 'Mixed' },
+]
+
 export default function CustomerFilters({ industries }: { industries: string[] }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -28,10 +35,11 @@ export default function CustomerFilters({ industries }: { industries: string[] }
   const currentPhase = searchParams.get('phase') ?? ''
   const currentSort = searchParams.get('sort') ?? 'updated'
   const currentIndustry = searchParams.get('industry') ?? ''
+  const currentTrack = searchParams.get('track') ?? ''
 
   function update(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString())
-    // Use 'updated' as default — remove from URL to keep it clean
+    // Remove param from URL when using default/empty value
     if (!value || (key === 'sort' && value === 'updated')) {
       params.delete(key)
     } else {
@@ -79,6 +87,20 @@ export default function CustomerFilters({ industries }: { industries: string[] }
           ))}
         </div>
       )}
+
+      {/* Track filter */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider w-14 shrink-0">Track</span>
+        {TRACK_OPTIONS.map(opt => (
+          <button
+            key={opt.val}
+            onClick={() => update('track', opt.val)}
+            className={`${pill} ${currentTrack === opt.val ? active : inactive}`}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
 
       {/* Sort */}
       <div className="flex items-center gap-2 flex-wrap">

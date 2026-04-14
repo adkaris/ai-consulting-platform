@@ -3,7 +3,9 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { calculateWeightedScore } from '@/lib/assessment-data'
+import { calculateCopilotDomainScore, COPILOT_NAME_TO_SCORE_KEY } from '@/lib/copilot-assessment-data'
 import { saveAssessment } from '@/app/actions'
+import { saveCopilotAssessment } from '@/app/assessment-actions'
 import {
     Check, ChevronRight, ChevronLeft, Send,
     RotateCcw, Save, BookOpen, StickyNote, Info,
@@ -25,6 +27,7 @@ interface Domain {
 }
 
 const DOMAIN_ICONS: Record<string, string> = {
+    // General AI domains
     Strategy: '🎯',
     Data: '🗄️',
     Tech: '⚙️',
@@ -33,6 +36,15 @@ const DOMAIN_ICONS: Record<string, string> = {
     Ops: '🔄',
     Governance: '📋',
     Financial: '💰',
+    // Copilot domains
+    'Copilot Strategy & Vision': '🎯',
+    'Microsoft 365 Foundation': '🏢',
+    'Content & Data Governance': '🗂️',
+    'Security & Compliance Readiness': '🔒',
+    'Identity & Access Management': '🪪',
+    'User Adoption & Change Management': '👥',
+    'Use Case Identification & Value': '💡',
+    'Copilot Governance & Acceptable Use': '📋',
 }
 
 // Maps DB domain names → saveAssessment score keys
@@ -50,9 +62,11 @@ const NAME_TO_SCORE_KEY: Record<string, string> = {
 export default function AssessmentForm({
     customerId,
     assessmentSchema: initialSchema,
+    trackType = 'GENERAL',
 }: {
     customerId: string
     assessmentSchema: Domain[]
+    trackType?: 'GENERAL' | 'COPILOT'
 }) {
     const router = useRouter()
     const DRAFT_KEY = `assessment_draft_${customerId}`
@@ -141,15 +155,29 @@ export default function AssessmentForm({
         setIsSubmitting(true)
         try {
             const domainAverages: Record<string, number> = {}
-            assessmentData.forEach(domain => {
-                const scoreKey = NAME_TO_SCORE_KEY[domain.name] ?? domain.id
-                domainAverages[scoreKey] = parseFloat(
-                    calculateWeightedScore(domain as any, scores).toFixed(2)
-                )
-            })
-            const assessment = await saveAssessment(customerId, domainAverages)
-            localStorage.removeItem(DRAFT_KEY)
-            router.push(`/customers/${customerId}/assessment/results?assessmentId=${assessment.id}`)
+
+            if (trackType === 'COPILOT') {
+                assessmentData.forEach(domain => {
+                    const scoreKey = COPILOT_NAME_TO_SCORE_KEY[domain.name] ?? domain.name
+                    const questionIds = domain.questions.map(q => q.id)
+                    domainAverages[scoreKey] = parseFloat(
+                        calculateCopilotDomainScore(domain.questions, scores, questionIds).toFixed(2)
+                    )
+                })
+                const assessment = await saveCopilotAssessment(customerId, domainAverages)
+                localStorage.removeItem(DRAFT_KEY)
+                router.push(`/customers/${customerId}/assessment/results?copilotAssessmentId=${assessment.id}`)
+            } else {
+                assessmentData.forEach(domain => {
+                    const scoreKey = NAME_TO_SCORE_KEY[domain.name] ?? domain.id
+                    domainAverages[scoreKey] = parseFloat(
+                        calculateWeightedScore(domain as any, scores).toFixed(2)
+                    )
+                })
+                const assessment = await saveAssessment(customerId, domainAverages)
+                localStorage.removeItem(DRAFT_KEY)
+                router.push(`/customers/${customerId}/assessment/results?assessmentId=${assessment.id}`)
+            }
         } catch (error) {
             console.error('Failed to save assessment:', error)
             alert('Error saving assessment. Please try again.')
@@ -158,7 +186,7 @@ export default function AssessmentForm({
         }
     }
 
-    const domainIcon = DOMAIN_ICONS[currentDomain.id] ?? '📊'
+    const domainIcon = DOMAIN_ICONS[currentDomain.name] ?? DOMAIN_ICONS[currentDomain.id] ?? '📊'
 
     return (
         <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -194,7 +222,16 @@ export default function AssessmentForm({
             <div className="border-b border-slate-200 pb-5">
                 <div className="flex items-start justify-between gap-4 mb-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-900">Maturity Assessment</h1>
+                        <div className="flex items-center gap-2 mb-1">
+                            <h1 className="text-2xl font-bold text-slate-900">
+                                {trackType === 'COPILOT' ? 'Copilot Readiness Assessment' : 'AI Maturity Assessment'}
+                            </h1>
+                            {trackType === 'COPILOT' && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black bg-violet-100 text-violet-700 uppercase tracking-wider">
+                                    Copilot Track
+                                </span>
+                            )}
+                        </div>
                         <p className="text-sm text-slate-500 mt-0.5">
                             Evaluating readiness across {totalDomains} domains
                         </p>
@@ -211,7 +248,11 @@ export default function AssessmentForm({
                 <progress
                     value={completedCount}
                     max={totalDomains}
-                    className="w-full h-2 rounded-full overflow-hidden appearance-none [&::-webkit-progress-bar]:bg-slate-100 [&::-webkit-progress-bar]:rounded-full [&::-webkit-progress-value]:bg-indigo-500 [&::-webkit-progress-value]:rounded-full [&::-webkit-progress-value]:transition-all [&::-webkit-progress-value]:duration-500 [&::-moz-progress-bar]:bg-indigo-500 [&::-moz-progress-bar]:rounded-full"
+                    className={`w-full h-2 rounded-full overflow-hidden appearance-none [&::-webkit-progress-bar]:bg-slate-100 [&::-webkit-progress-bar]:rounded-full [&::-webkit-progress-value]:rounded-full [&::-webkit-progress-value]:transition-all [&::-webkit-progress-value]:duration-500 [&::-moz-progress-bar]:rounded-full ${
+                        trackType === 'COPILOT'
+                            ? '[&::-webkit-progress-value]:bg-violet-500 [&::-moz-progress-bar]:bg-violet-500'
+                            : '[&::-webkit-progress-value]:bg-indigo-500 [&::-moz-progress-bar]:bg-indigo-500'
+                    }`}
                 />
                 {allCompleted && (
                     <p className="text-xs text-emerald-600 font-bold mt-1.5 flex items-center gap-1">

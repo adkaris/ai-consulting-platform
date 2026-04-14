@@ -1,6 +1,6 @@
 import { getCustomersWithStats } from '../actions'
 // Implemented: 2026-04-05 — Proposals section 2 (Customer Portfolio UX)
-import { Building2, ArrowRight, SlidersHorizontal } from 'lucide-react'
+import { Building2, ArrowRight, SlidersHorizontal, Bot, MonitorSmartphone, Layers } from 'lucide-react'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import SearchInput from '@/components/SearchInput'
@@ -8,6 +8,12 @@ import CustomerFilters from '@/components/CustomerFilters'
 import NewCustomerModal from '@/components/NewCustomerModal'
 
 const PHASE_SHORT = ['Discovery', 'Strategy', 'PoV Execution', 'Change Mgt', 'Realization']
+
+const TRACK_CHIPS: Record<string, { label: string; icon: React.ReactNode; className: string }> = {
+    GENERAL_AI: { label: 'General AI',      icon: <Bot className="w-2.5 h-2.5" />,               className: 'bg-blue-50 text-blue-700 border-blue-100' },
+    COPILOT:    { label: 'Copilot',          icon: <MonitorSmartphone className="w-2.5 h-2.5" />, className: 'bg-violet-50 text-violet-700 border-violet-100' },
+    MIXED:      { label: 'Mixed',            icon: <Layers className="w-2.5 h-2.5" />,            className: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
+}
 
 function formatTimeAgo(date: Date | string): string {
     const d = new Date(date)
@@ -29,6 +35,7 @@ type SearchParams = {
     phase?: string
     sort?: string
     industry?: string
+    track?: string
 }
 
 export default async function CustomersPage({
@@ -36,7 +43,7 @@ export default async function CustomersPage({
 }: {
     searchParams: Promise<SearchParams>
 }) {
-    const { q, phase, sort, industry } = await searchParams
+    const { q, phase, sort, industry, track } = await searchParams
     const allCustomers = await getCustomersWithStats()
 
     // Derive unique industries for the filter component
@@ -61,6 +68,9 @@ export default async function CustomersPage({
             (c.industry ?? '').toLowerCase() === industry.toLowerCase()
         )
     }
+    if (track) {
+        customers = customers.filter(c => (c.aiTrack ?? 'GENERAL_AI') === track)
+    }
 
     // Apply sort (default: updatedAt desc, already from DB)
     if (sort === 'alpha') {
@@ -71,7 +81,7 @@ export default async function CustomersPage({
         customers = [...customers].sort((a, b) => b.currentPhase - a.currentPhase)
     }
 
-    const isFiltered = Boolean(q || phase || industry)
+    const isFiltered = Boolean(q || phase || industry || track)
     const inExecutionPhases = allCustomers.filter(c => c.currentPhase >= 3).length
 
     return (
@@ -202,6 +212,15 @@ export default async function CustomersPage({
                                             <span className="px-2.5 py-1 rounded-full bg-blue-50 border border-blue-100 text-[10px] font-semibold tracking-wider text-blue-700 capitalize">
                                                 {customer.industry || 'Tech'}
                                             </span>
+                                            {customer.aiTrack && TRACK_CHIPS[customer.aiTrack] && (() => {
+                                                const chip = TRACK_CHIPS[customer.aiTrack]
+                                                return (
+                                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-semibold ${chip.className}`}>
+                                                        {chip.icon}
+                                                        {chip.label}
+                                                    </span>
+                                                )
+                                            })()}
                                         </div>
                                     </div>
 

@@ -2,7 +2,7 @@
 
 import { useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { updateUseCase } from '@/app/actions'
+import { updateUseCaseStatus } from '@/app/actions'
 import { toastSuccess, toastError } from '@/lib/toast'
 
 type Status = 'DRAFT' | 'APPROVED' | 'PILOTING' | 'PRODUCTION'
@@ -28,7 +28,7 @@ export default function UseCaseStatusSelect({
         const newStatus = e.target.value as Status
         startTransition(async () => {
             try {
-                await updateUseCase(useCaseId, { status: newStatus })
+                await updateUseCaseStatus(useCaseId, newStatus)
                 toastSuccess(`Status updated to ${newStatus.charAt(0) + newStatus.slice(1).toLowerCase()}`)
                 router.refresh()
             } catch {

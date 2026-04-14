@@ -17,6 +17,7 @@ export async function createCustomer(formData: FormData) {
     const industry = formData.get('industry') as string
     const employees = formData.get('employees') as string
     const ambitionLevel = formData.get('ambitionLevel') ? Number(formData.get('ambitionLevel')) : 1
+    const aiTrack = (formData.get('aiTrack') as string) || 'GENERAL_AI'
 
     await prisma.customer.create({
         data: {
@@ -24,6 +25,7 @@ export async function createCustomer(formData: FormData) {
             industry,
             employees,
             ambitionLevel,
+            aiTrack,
             currentPhase: 1 // Default to Phase 1: Discovery & Readiness Assessment
         }
     })
@@ -106,6 +108,8 @@ export async function addUseCase(customerId: string, formData: FormData) {
     // Keep roiEstimate as sum of MONEY rois for backward-compat sorting
     const roiEstimate = rois.filter(r => r.type === 'MONEY').reduce((s, r) => s + r.value, 0) || null
 
+    const useCaseType = (formData.get('useCaseType') as string) || 'GENERAL_AI'
+
     const useCase = await prisma.useCase.create({
         data: {
             customerId,
@@ -116,6 +120,7 @@ export async function addUseCase(customerId: string, formData: FormData) {
             roiEstimate,
             complexity,
             value: ucValue,
+            useCaseType,
             status: 'DRAFT',
             phase: 2
         }
@@ -134,6 +139,15 @@ export async function addUseCase(customerId: string, formData: FormData) {
     }
 
     revalidatePath(`/customers/${customerId}`)
+}
+
+export async function updateUseCaseStatus(useCaseId: string, status: string) {
+    await prisma.useCase.update({
+        where: { id: useCaseId },
+        data: { status }
+    })
+    revalidatePath('/use-cases')
+    revalidatePath('/')
 }
 
 export async function updateUseCase(useCaseId: string, customerId: string, formData: FormData) {
@@ -225,6 +239,7 @@ export async function updateCustomer(customerId: string, formData: FormData) {
     const industry = formData.get('industry') as string
     const employees = formData.get('employees') as string
     const ambitionLevel = formData.get('ambitionLevel') ? Number(formData.get('ambitionLevel')) : undefined
+    const aiTrack = (formData.get('aiTrack') as string) || undefined
 
     await prisma.customer.update({
         where: { id: customerId },
@@ -233,6 +248,7 @@ export async function updateCustomer(customerId: string, formData: FormData) {
             industry: industry || null,
             employees: employees || null,
             ambitionLevel,
+            ...(aiTrack ? { aiTrack } : {}),
         }
     })
 

@@ -112,10 +112,10 @@ export default function DashboardClient({ customers, assessments, useCases, phas
                   border: '1px solid #e2e8f0',
                   boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
                 }}
-                formatter={(val: any, name: string) => {
+                formatter={(val: any, name: string | undefined) => {
                   if (name === 'roi') return [`$${Number(val).toLocaleString()}`, 'Total ROI']
                   if (name === 'customers') return [val, 'Customers']
-                  return [val, name]
+                  return [val, name ?? '']
                 }}
               />
               <Bar dataKey="roi" fill="#3b82f6" radius={[6, 6, 0, 0]} maxBarSize={60}>

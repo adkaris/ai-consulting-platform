@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, X, Briefcase, TrendingUp, Clock, Euro, Trash2 } from 'lucide-react'
+import { Plus, X, Briefcase, TrendingUp, Clock, Euro, Trash2, Bot, MonitorSmartphone } from 'lucide-react'
 import { addUseCase } from '@/app/actions'
 
 function RatingSlider({ name, label, hint, defaultValue = 3, lowLabel, highLabel }: {
@@ -53,10 +53,20 @@ const ROI_TYPE_CONFIG: Record<ROIType, { label: string; icon: React.ReactNode; d
 let _id = 0
 const nextId = () => ++_id
 
-export default function UseCaseModal({ customerId }: { customerId: string }) {
+export default function UseCaseModal({
+    customerId,
+    customerTrack = 'GENERAL_AI',
+}: {
+    customerId: string
+    customerTrack?: string
+}) {
     const [isOpen, setIsOpen] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [rois, setRois] = useState<ROIEntry[]>([])
+    // For MIXED customers, default to GENERAL_AI; for pure COPILOT, lock to COPILOT
+    const [useCaseType, setUseCaseType] = useState<'GENERAL_AI' | 'COPILOT'>(
+        customerTrack === 'COPILOT' ? 'COPILOT' : 'GENERAL_AI'
+    )
 
     const addROI = () => setRois(prev => [
         ...prev,
@@ -82,10 +92,12 @@ export default function UseCaseModal({ customerId }: { customerId: string }) {
             .filter(r => r.value !== '' && !isNaN(Number(r.value)))
             .map(({ type, value, unit, description }) => ({ type, value: Number(value), unit, description }))
         formData.set('rois', JSON.stringify(validRois))
+        formData.set('useCaseType', useCaseType)
         try {
             await addUseCase(customerId, formData)
             setIsOpen(false)
             setRois([])
+            setUseCaseType(customerTrack === 'COPILOT' ? 'COPILOT' : 'GENERAL_AI')
         } catch (error) {
             console.error(error)
             alert('Failed to add use case')
@@ -125,6 +137,46 @@ export default function UseCaseModal({ customerId }: { customerId: string }) {
 
                 <form onSubmit={handleSubmit} className="flex flex-col overflow-y-auto">
                     <div className="p-8 space-y-5">
+
+                        {/* Use Case Type — only show for MIXED customers */}
+                        {customerTrack === 'MIXED' && (
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-semibold text-slate-700 ml-1">Use Case Type</label>
+                                <div className="grid grid-cols-2 gap-2.5">
+                                    <button
+                                        type="button"
+                                        onClick={() => setUseCaseType('GENERAL_AI')}
+                                        className={`flex items-center gap-2.5 p-3 rounded-xl border-2 transition-all ${
+                                            useCaseType === 'GENERAL_AI'
+                                                ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-500/20'
+                                                : 'border-slate-200 hover:border-blue-300 hover:bg-blue-50/50'
+                                        }`}
+                                    >
+                                        <Bot className="w-4 h-4 text-blue-600 shrink-0" />
+                                        <div className="text-left">
+                                            <p className="text-xs font-black text-slate-800">General AI</p>
+                                            <p className="text-[10px] text-slate-500">Custom AI / LLM</p>
+                                        </div>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setUseCaseType('COPILOT')}
+                                        className={`flex items-center gap-2.5 p-3 rounded-xl border-2 transition-all ${
+                                            useCaseType === 'COPILOT'
+                                                ? 'border-violet-500 bg-violet-50 ring-2 ring-violet-500/20'
+                                                : 'border-slate-200 hover:border-violet-300 hover:bg-violet-50/50'
+                                        }`}
+                                    >
+                                        <MonitorSmartphone className="w-4 h-4 text-violet-600 shrink-0" />
+                                        <div className="text-left">
+                                            <p className="text-xs font-black text-slate-800">Microsoft Copilot</p>
+                                            <p className="text-[10px] text-slate-500">M365 / Copilot Studio</p>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Title */}
                         <div className="space-y-1.5">
                             <label className="text-sm font-semibold text-slate-700 ml-1">Title</label>
