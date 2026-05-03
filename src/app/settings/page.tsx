@@ -7,6 +7,7 @@ import {
     Settings, Database, Layers, ShieldCheck, BookOpen,
     GitBranch, Users, Activity, FileText, CheckCircle, Bot, HardDriveDownload, MonitorSmartphone
 } from 'lucide-react'
+import ResetDatabaseButton from '@/components/ResetDatabaseButton'
 
 export default async function SettingsPage() {
     const [customers, assessments, useCases, assessmentSchema, copilotSchema] = await Promise.all([
@@ -65,7 +66,7 @@ export default async function SettingsPage() {
                 <div className="p-8 grid grid-cols-1 sm:grid-cols-2 gap-6">
                     {[
                         { label: 'Application Name', value: 'UniSystems AI Consulting Platform' },
-                        { label: 'Version', value: 'MVP 1.0' },
+                        { label: 'Version', value: '1.2.0' },
                         { label: 'Framework', value: 'Next.js 16 (App Router)' },
                         { label: 'Database', value: 'SQLite via Prisma ORM' },
                         { label: 'Methodology', value: 'UniSystems 5-Phase AI Framework' },
@@ -102,9 +103,14 @@ export default async function SettingsPage() {
                             </div>
                         ))}
                     </div>
-                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 mb-6">
                         <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Local Database Path</p>
                         <code className="text-xs font-mono text-slate-700">platform/prisma/dev.db</code>
+                    </div>
+                    <div className="border-t border-slate-100 pt-6">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Danger Zone</p>
+                        <p className="text-sm text-slate-500 mb-4">Reset the database to a clean empty state. All customer data, assessments, use cases, and deliverables will be permanently deleted. The assessment question bank is preserved.</p>
+                        <ResetDatabaseButton />
                     </div>
                 </div>
             </section>

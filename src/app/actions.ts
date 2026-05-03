@@ -639,6 +639,20 @@ export async function deleteChangeManagementItem(itemId: string, customerId: str
     revalidatePath(`/customers/${customerId}`)
 }
 
+// ─── Database Reset ───────────────────────────────────────────────────────────
+
+export async function resetDatabase(): Promise<void> {
+    // Delete in dependency order to respect FK constraints
+    await prisma.document.deleteMany()
+    await prisma.deliverable.deleteMany()
+    await prisma.phaseTask.deleteMany()
+    await prisma.useCase.deleteMany()
+    await prisma.copilotAssessment.deleteMany()
+    await prisma.assessment.deleteMany()
+    await prisma.customer.deleteMany()
+    revalidatePath('/', 'layout')
+}
+
 // ─── Portfolio Data Export ────────────────────────────────────────────────────
 
 export async function exportPortfolioData() {
@@ -656,3 +670,4 @@ export async function exportPortfolioData() {
         useCases,
     }
 }
+

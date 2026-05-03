@@ -290,6 +290,162 @@ function buildBody(tokens: any[]): any[] {
     return children
 }
 
+// ─── Front-matter page builders ──────────────────────────────────────────────
+
+function makeDocumentHistoryPage(date: string): any[] {
+    const noBorder = { style: BorderStyle.NONE, size: 0, color: WHITE, space: 0 }
+    const histTable = new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        layout: TableLayoutType.FIXED,
+        rows: [
+            new TableRow({
+                tableHeader: true,
+                children: ['VERSION', 'DATE', 'DESCRIPTION', 'SECTIONS AFFECTED'].map(txt =>
+                    new TableCell({
+                        children: [new Paragraph({ children: [new TextRun({ text: txt, bold: true, color: WHITE, size: 18, font: 'Calibri' })] })],
+                        shading: { fill: DARK_BLUE, type: ShadingType.SOLID, color: DARK_BLUE },
+                        margins: { top: 80, bottom: 80, left: 100, right: 100 },
+                        verticalAlign: VerticalAlign.CENTER,
+                        borders: { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder },
+                    })
+                ),
+            }),
+            new TableRow({
+                children: ['1.0', date, 'Initial Release', 'All'].map(txt =>
+                    new TableCell({
+                        children: [new Paragraph({ children: [new TextRun({ text: txt, font: 'Calibri', size: 18, color: BODY_TEXT })] })],
+                        shading: { fill: WHITE, type: ShadingType.SOLID, color: WHITE },
+                        margins: { top: 60, bottom: 60, left: 100, right: 100 },
+                        verticalAlign: VerticalAlign.CENTER,
+                        borders: { top: noBorder, bottom: { style: BorderStyle.SINGLE, color: RULE_GREY, size: 1, space: 0 }, left: noBorder, right: noBorder },
+                    })
+                ),
+            }),
+        ],
+        borders: {
+            top: { style: BorderStyle.SINGLE, color: RULE_GREY, size: 4, space: 0 },
+            bottom: { style: BorderStyle.SINGLE, color: RULE_GREY, size: 4, space: 0 },
+            left: noBorder, right: noBorder,
+        },
+    })
+    return [
+        new Paragraph({
+            children: [new TextRun({ text: 'DOCUMENT HISTORY', bold: true, color: DARK_BLUE, size: 28, font: 'Calibri' })],
+            spacing: { before: 240, after: 200 },
+            border: { bottom: { color: GOLD, style: BorderStyle.THICK, size: 6, space: 1 } },
+        }),
+        new Paragraph({ children: [new TextRun('')], spacing: { after: 160 } }),
+        histTable,
+        new Paragraph({ children: [new PageBreak()] }),
+    ]
+}
+
+function makeCopyrightPage(year: string): any[] {
+    const lines: { text: string; bold?: boolean; color?: string }[] = [
+        { text: `Copyright© ${year} by Uni Systems S.M.S.A.`, bold: true, color: DARK_BLUE },
+        { text: '' },
+        { text: 'All rights reserved. No part of this document or any information included in it can be transmitted to any other party without the prior written consent of Uni Systems S.M.S.A.' },
+        { text: '' },
+        { text: 'Uni Systems S.M.S.A.', bold: true, color: DARK_BLUE },
+        { text: '19 km Athens Lamia National Road' },
+        { text: 'Metamorfosi, Attica, 14451' },
+        { text: 'Tel.: +30 210 8199 100' },
+        { text: 'Fax: +30 210 8199 200' },
+        { text: '' },
+        { text: 'GEN COM Register No 121831201000' },
+        { text: '' },
+        { text: 'Subject to regulatory and technical amendments.', color: MID_GREY },
+    ]
+    const result: any[] = [
+        new Paragraph({
+            children: [new TextRun({ text: 'COPYRIGHT', bold: true, color: DARK_BLUE, size: 28, font: 'Calibri' })],
+            spacing: { before: 240, after: 200 },
+            border: { bottom: { color: GOLD, style: BorderStyle.THICK, size: 6, space: 1 } },
+        }),
+        new Paragraph({ children: [new TextRun('')], spacing: { after: 480 } }),
+    ]
+    for (const line of lines) {
+        result.push(new Paragraph({
+            children: [new TextRun({ text: line.text, font: 'Calibri', size: 20, color: line.color ?? BODY_TEXT, bold: line.bold })],
+            spacing: { before: 60, after: 60 },
+        }))
+    }
+    result.push(new Paragraph({ children: [new PageBreak()] }))
+    return result
+}
+
+function makeTocPage(markdown: string): any[] {
+    const headings: { level: number; text: string }[] = []
+    for (const line of markdown.split('\n')) {
+        const m = line.match(/^(#{2,3})\s+(.+)$/)
+        if (m) headings.push({ level: m[1].length, text: m[2].replace(/\*\*/g, '') })
+    }
+    const result: any[] = [
+        new Paragraph({
+            children: [new TextRun({ text: 'TABLE OF CONTENTS', bold: true, color: DARK_BLUE, size: 28, font: 'Calibri' })],
+            spacing: { before: 240, after: 200 },
+            border: { bottom: { color: GOLD, style: BorderStyle.THICK, size: 6, space: 1 } },
+        }),
+        new Paragraph({ children: [new TextRun('')], spacing: { after: 160 } }),
+    ]
+    for (const h of headings) {
+        result.push(new Paragraph({
+            children: [new TextRun({
+                text: h.text,
+                font: 'Calibri',
+                size: h.level === 2 ? 22 : 20,
+                bold: h.level === 2,
+                color: h.level === 2 ? DARK_BLUE : BODY_TEXT,
+            })],
+            indent: h.level >= 3 ? { left: convertInchesToTwip(0.4) } : undefined,
+            spacing: { before: h.level === 2 ? 120 : 60, after: h.level === 2 ? 40 : 20 },
+        }))
+    }
+    result.push(new Paragraph({ children: [new PageBreak()] }))
+    return result
+}
+
+function makeListsPage(markdown: string): any[] {
+    // Count tables in markdown
+    let tableCount = 0
+    let inTable = false
+    for (const line of markdown.split('\n')) {
+        if (/^\s*\|.+\|/.test(line) && !/^\s*\|[-:\s|]+\|/.test(line)) {
+            if (!inTable) { tableCount++; inTable = true }
+        } else if (!/^\s*\|[-:\s|]+\|/.test(line)) {
+            inTable = false
+        }
+    }
+    const noTable = tableCount === 0
+    const result: any[] = [
+        new Paragraph({
+            children: [new TextRun({ text: 'LIST OF TABLES', bold: true, color: DARK_BLUE, size: 28, font: 'Calibri' })],
+            spacing: { before: 240, after: 200 },
+            border: { bottom: { color: GOLD, style: BorderStyle.THICK, size: 6, space: 1 } },
+        }),
+        new Paragraph({ children: [new TextRun('')], spacing: { after: 120 } }),
+    ]
+    if (noTable) {
+        result.push(new Paragraph({ children: [new TextRun({ text: 'No tables are included in this document.', font: 'Calibri', size: 20, color: MID_GREY, italics: true })] }))
+    } else {
+        for (let i = 1; i <= tableCount; i++) {
+            result.push(new Paragraph({ children: [new TextRun({ text: `Table ${i}`, font: 'Calibri', size: 20, color: BODY_TEXT })], spacing: { before: 80, after: 40 } }))
+        }
+    }
+    result.push(
+        new Paragraph({ children: [new TextRun('')], spacing: { before: 480, after: 0 } }),
+        new Paragraph({
+            children: [new TextRun({ text: 'LIST OF FIGURES', bold: true, color: DARK_BLUE, size: 28, font: 'Calibri' })],
+            spacing: { before: 0, after: 200 },
+            border: { bottom: { color: GOLD, style: BorderStyle.THICK, size: 6, space: 1 } },
+        }),
+        new Paragraph({ children: [new TextRun('')], spacing: { after: 120 } }),
+        new Paragraph({ children: [new TextRun({ text: 'No figures are included in this document.', font: 'Calibri', size: 20, color: MID_GREY, italics: true })] }),
+        new Paragraph({ children: [new PageBreak()] }),
+    )
+    return result
+}
+
 // ─── Public API ───────────────────────────────────────────────────────────────
 export async function convertMarkdownToDocx(
     deliverableKey: string,
@@ -343,6 +499,40 @@ export async function convertMarkdownToDocx(
         borders: { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder },
     })
 
+    const coverPageChildren: any[] = [
+        // Banner
+        new Paragraph({
+            children: [new TextRun({ text: 'UniSystems  |  AI Consulting Platform', bold: true, color: WHITE, size: 26, font: 'Calibri' })],
+            alignment: AlignmentType.CENTER,
+            shading: { type: ShadingType.SOLID, fill: DARK_BLUE, color: DARK_BLUE },
+            spacing: { before: 0, after: 0, line: 560 },
+        }),
+        new Paragraph({ children: [new TextRun('')], spacing: { line: 480 } }),
+        new Paragraph({ children: [new TextRun('')], spacing: { line: 480 } }),
+        new Paragraph({ children: [new TextRun('')], spacing: { line: 480 } }),
+        // Title
+        new Paragraph({
+            children: [new TextRun({ text: meta.coverTitle, bold: true, color: DARK_BLUE, size: 52, font: 'Calibri' })],
+            spacing: { before: 720, after: 200 },
+        }),
+        // Subtitle
+        new Paragraph({
+            children: [new TextRun({ text: meta.coverSubtitle, color: MID_BLUE, size: 26, italics: true, font: 'Calibri' })],
+            spacing: { before: 0, after: 560 },
+        }),
+        // Gold rule
+        new Paragraph({
+            children: [new TextRun('')],
+            border: { bottom: { color: GOLD, style: BorderStyle.THICK, size: 8, space: 1 } },
+            spacing: { before: 0, after: 480 },
+        }),
+        // Meta table
+        coverMetaTable,
+        new Paragraph({ children: [new TextRun('')], spacing: { line: 480 } }),
+        new Paragraph({ children: [new TextRun('')], spacing: { line: 480 } }),
+        new Paragraph({ children: [new PageBreak()] }),
+    ]
+
     // Page header
     const pageHeader = new Header({
         children: [
@@ -373,42 +563,6 @@ export async function convertMarkdownToDocx(
         ],
     })
 
-    const coverPageChildren: any[] = [
-        // Banner
-        new Paragraph({
-            children: [new TextRun({ text: 'UniSystems  |  AI Consulting Platform', bold: true, color: WHITE, size: 26, font: 'Calibri' })],
-            alignment: AlignmentType.CENTER,
-            shading: { type: ShadingType.SOLID, fill: DARK_BLUE, color: DARK_BLUE },
-            spacing: { before: 0, after: 0, line: 560 },
-        }),
-        new Paragraph({ children: [new TextRun('')], spacing: { line: 480 } }),
-        new Paragraph({ children: [new TextRun('')], spacing: { line: 480 } }),
-        new Paragraph({ children: [new TextRun('')], spacing: { line: 480 } }),
-        // Title
-        new Paragraph({
-            children: [new TextRun({ text: meta.coverTitle, bold: true, color: DARK_BLUE, size: 52, font: 'Calibri' })],
-            spacing: { before: 720, after: 200 },
-        }),
-        // Subtitle
-        new Paragraph({
-            children: [new TextRun({ text: meta.coverSubtitle, color: MID_BLUE, size: 26, italics: true, font: 'Calibri' })],
-            spacing: { before: 0, after: 560 },
-        }),
-        // Gold rule
-        new Paragraph({
-            children: [new TextRun('')],
-            border: { bottom: { color: GOLD, style: BorderStyle.THICK, size: 8, space: 1 } },
-            spacing: { before: 0, after: 480 },
-        }),
-        // Meta table
-        coverMetaTable,
-        // Spacing
-        new Paragraph({ children: [new TextRun('')], spacing: { line: 480 } }),
-        new Paragraph({ children: [new TextRun('')], spacing: { line: 480 } }),
-        // Page break
-        new Paragraph({ children: [new PageBreak()] }),
-    ]
-
     const doc = new Document({
         sections: [
             {
@@ -437,7 +591,13 @@ export async function convertMarkdownToDocx(
                 },
                 headers: { default: pageHeader },
                 footers: { default: pageFooter },
-                children: bodyChildren,
+                children: [
+                    ...makeDocumentHistoryPage(date),
+                    ...makeCopyrightPage(String(new Date().getFullYear())),
+                    ...makeTocPage(markdown),
+                    ...makeListsPage(markdown),
+                    ...bodyChildren,
+                ],
             },
         ],
     })
